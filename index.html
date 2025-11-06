@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Gyro Snake Isometric</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="hud" aria-live="polite">
+        <div class="scoreboard">
+          <span class="label">Score</span>
+          <span id="score-value">0</span>
+        </div>
+        <div class="status">
+          <p id="input-status">기울기 센서 준비 중...</p>
+          <button id="permission-button" type="button" hidden>센서 사용 허용</button>
+        </div>
+      </header>
+      <main id="game-container" role="application" aria-label="64x64 격자 게임 공간"></main>
+      <footer class="instructions">
+        <p>
+          스마트폰을 기울여 캐릭터를 조종하세요. 코인을 먹으면 몸집이 커집니다. 센서가 동작하지 않으면 버튼을
+          눌러 권한을 허용하거나, 데스크톱에서는 화살표 키를 사용하세요.
+        </p>
+      </footer>
+    </div>
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
