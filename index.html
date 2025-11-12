@@ -18,13 +18,27 @@
           <button id="permission-button" type="button" hidden>센서 사용 허용</button>
         </div>
       </header>
-      <main id="game-container" role="application" aria-label="64x64 격자 게임 공간"></main>
+      <main id="game-container" role="application" aria-label="16x16 격자 게임 공간"></main>
       <footer class="instructions">
         <p>
           스마트폰을 기울여 캐릭터를 조종하세요. 코인을 먹으면 몸집이 커집니다. 센서가 동작하지 않으면 버튼을
           눌러 권한을 허용하거나, 데스크톱에서는 화살표 키를 사용하세요.
         </p>
       </footer>
+      <div
+        id="game-over-overlay"
+        class="overlay hidden"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="game-over-title"
+        aria-describedby="game-over-message"
+      >
+        <div class="overlay-content">
+          <h2 id="game-over-title">게임 오버</h2>
+          <p id="game-over-message">몸통에 부딪혔어요! 다시 도전해보세요.</p>
+          <button id="restart-button" type="button">다시 시작</button>
+        </div>
+      </div>
     </div>
     <script type="module" src="script.js"></script>
   </body>

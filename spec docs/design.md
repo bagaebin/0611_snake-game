@@ -27,10 +27,12 @@ graph TD
 - **Path Buffer**: 헤드 이동 경로를 누적 저장하며, 총 길이를 기준으로 오래된 기록을 제거합니다.
 - **CoinSpawner**: 5초 타이머 기반으로 빈 셀에 코인을 생성하고, 수집 로직을 담당합니다.
 - **HUD Renderer**: 점수, 센서 상태, 안내 메시지를 표시합니다.
+- **GameState Controller**: 자기 충돌 시(단, 바로 뒤 세그먼트와의 겹침은 허용) 게임 오버 상태를 설정하고, 재시작 오버레이 표시를 제어합니다.
 
 ## 데이터 구조
-- `gridSize`: 64 (셀 수)
+- `gridSize`: 16 (셀 수)
 - `tileSize`: 1 (각 셀 길이)
+- `snakeSpeed`: 4 (타일/초 기준 이동 속도)
 - `snakeSegments`: `THREE.Mesh[]`
 - `pathPositions`: `THREE.Vector3[]` (헤드 경로)
 - `pathDistances`: `number[]` (각 경로 지점까지의 누적 거리)
@@ -39,7 +41,7 @@ graph TD
 ## 렌더링 구성
 - **카메라**: OrthographicCamera로 `45°` X, `45°` Y 회전된 아이소메트릭 구도.
 - **조명**: AmbientLight + DirectionalLight로 간단한 그림자 느낌을 부여합니다.
-- **지면**: 64x64 평면에 GridHelper 또는 커스텀 타일 메시를 사용합니다.
+- **지면**: 16x16 평면에 GridHelper 또는 커스텀 타일 메시를 사용합니다.
 - **프레임 루프**: `requestAnimationFrame` 기반으로 매 프레임 이동 및 렌더링을 수행합니다.
 
 ## 상호작용 흐름
@@ -50,6 +52,7 @@ graph TD
    - 입력 데이터를 기반으로 `currentDirection`을 보간.
    - `moveSnake(deltaTime)`으로 헤드 위치 갱신 및 경로 버퍼 업데이트.
    - `updateSegments()`로 세그먼트 위치 재계산.
+   - `checkSelfCollision()`으로 자기 충돌 여부를 검사하고, 필요 시 게임오버 처리.
    - `checkCoinCollision()`으로 코인 수집 여부 확인.
    - `spawnCoinIfNeeded()`로 타이밍 체크.
    - `renderer.render(scene, camera)` 수행.

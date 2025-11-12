@@ -4,8 +4,11 @@ const container = document.getElementById('game-container');
 const scoreEl = document.getElementById('score-value');
 const statusEl = document.getElementById('input-status');
 const permissionButton = document.getElementById('permission-button');
+const overlay = document.getElementById('game-over-overlay');
+const restartButton = document.getElementById('restart-button');
+const initialStatusMessage = statusEl.textContent;
 
-const gridSize = 64;
+const gridSize = 16;
 const tileSize = 1;
 const halfGrid = (gridSize * tileSize) / 2;
 const frustumSize = gridSize * tileSize;
@@ -14,7 +17,7 @@ const snake = {
   segments: [],
   direction: new THREE.Vector3(1, 0, 0),
   targetDirection: new THREE.Vector3(1, 0, 0),
-  speed: 8,
+  speed: 4,
   segmentLength: tileSize,
   segmentHeight: tileSize * 0.55,
   pathPositions: [],
@@ -38,15 +41,28 @@ const inputState = {
 let scene, camera, renderer;
 let lastFrameTime = performance.now();
 let score = 0;
+let isGameOver = false;
+let lastActiveStatusMessage = initialStatusMessage;
 
 initScene();
 initInput();
 startGame();
 renderer.setAnimationLoop(animate);
 
+restartButton.addEventListener('click', () => {
+  startGame();
+});
+
+function setStatusMessage(message, { persist = true } = {}) {
+  statusEl.textContent = message;
+  if (persist) {
+    lastActiveStatusMessage = message;
+  }
+}
+
 function initScene() {
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x020915, 40, 180);
+  scene.fog = new THREE.Fog(0x142b4f, 120, 420);
 
   const aspect = container.clientWidth / container.clientHeight || 1;
   camera = new THREE.OrthographicCamera(
@@ -63,13 +79,13 @@ function initScene() {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setClearColor(0x020915, 1);
+  renderer.setClearColor(0x142b4f, 1);
   container.appendChild(renderer.domElement);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.85);
   scene.add(ambient);
 
-  const directional = new THREE.DirectionalLight(0xffe7c2, 0.75);
+  const directional = new THREE.DirectionalLight(0xfff3d6, 0.9);
   directional.position.set(60, 120, 40);
   scene.add(directional);
 
@@ -80,44 +96,51 @@ function initScene() {
 
 function createGrid() {
   const floorGeometry = new THREE.PlaneGeometry(gridSize * tileSize, gridSize * tileSize, gridSize, gridSize);
-  const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x0d2238, metalness: 0.1, roughness: 0.8 });
+  const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x1b2d4a, metalness: 0.15, roughness: 0.75 });
   const floor = new THREE.Mesh(floorGeometry, floorMaterial);
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = false;
   scene.add(floor);
 
-  const gridHelper = new THREE.GridHelper(gridSize * tileSize, gridSize, 0x174c74, 0x0e2a45);
+  const gridHelper = new THREE.GridHelper(gridSize * tileSize, gridSize, 0x6bc8ff, 0x2a4e74);
   gridHelper.position.y = 0.01;
   scene.add(gridHelper);
+}
+
+function clampPositionToGrid(position) {
+  const limit = halfGrid - tileSize * 0.5;
+  position.x = THREE.MathUtils.clamp(position.x, -limit, limit);
+  position.z = THREE.MathUtils.clamp(position.z, -limit, limit);
+  return position;
 }
 
 function initInput() {
   if (typeof DeviceOrientationEvent !== 'undefined') {
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
       permissionButton.hidden = false;
-      statusEl.textContent = '센서 사용을 허용해주세요.';
+      setStatusMessage('센서 사용을 허용해주세요.');
       permissionButton.addEventListener('click', async () => {
         try {
           const response = await DeviceOrientationEvent.requestPermission();
           if (response === 'granted') {
             attachOrientationListener();
             permissionButton.hidden = true;
-            statusEl.textContent = '기기를 기울여 조작하세요.';
+            setStatusMessage('기기를 기울여 조작하세요.');
           } else {
-            statusEl.textContent = '센서 권한이 거부되었습니다. 화살표 키를 사용하세요.';
+            setStatusMessage('센서 권한이 거부되었습니다. 화살표 키를 사용하세요.');
             inputState.orientationSupported = false;
           }
         } catch (err) {
           console.error(err);
-          statusEl.textContent = '센서 권한 요청에 실패했습니다. 화살표 키를 사용하세요.';
+          setStatusMessage('센서 권한 요청에 실패했습니다. 화살표 키를 사용하세요.');
         }
       });
     } else {
       attachOrientationListener();
-      statusEl.textContent = '기기를 기울여 조작하세요.';
+      setStatusMessage('기기를 기울여 조작하세요.');
     }
   } else {
-    statusEl.textContent = '센서를 지원하지 않습니다. 화살표 키로 조작하세요.';
+    setStatusMessage('센서를 지원하지 않습니다. 화살표 키로 조작하세요.');
   }
 
   window.addEventListener('keydown', (event) => {
@@ -145,9 +168,11 @@ function initInput() {
       default:
         return;
     }
-    statusEl.textContent = inputState.orientationSupported
-      ? '기울기로 조작 중 (키보드 보조 입력 가능)'
-      : '화살표 키로 조작 중';
+    setStatusMessage(
+      inputState.orientationSupported
+        ? '기울기로 조작 중 (키보드 보조 입력 가능)'
+        : '화살표 키로 조작 중'
+    );
   });
 
   window.addEventListener('keyup', (event) => {
@@ -199,7 +224,7 @@ function attachOrientationListener() {
       }
 
       if (!inputState.orientationSupported) {
-        statusEl.textContent = '기기를 기울여 조작하세요.';
+        setStatusMessage('기기를 기울여 조작하세요.');
       }
       inputState.orientationSupported = true;
     },
@@ -208,23 +233,29 @@ function attachOrientationListener() {
 }
 
 function startGame() {
+  isGameOver = false;
+  overlay.classList.add('hidden');
+  overlay.setAttribute('aria-hidden', 'true');
   clearSnake();
   score = 0;
   updateScore();
+  setStatusMessage(lastActiveStatusMessage, { persist: false });
 
   if (coin.mesh) {
     coin.mesh.visible = false;
   }
   coin.active = false;
+  coin.cell = null;
 
   const startCell = getRandomEmptyCell();
   const startPosition = cellToPosition(startCell);
   snake.direction.set(1, 0, 0);
   snake.targetDirection.set(1, 0, 0);
 
-  const head = createSegment(0x4fc3f7);
+  const head = createSegment(0xff7a59, 0x6e2416, 0.6);
   head.position.copy(startPosition);
   head.position.y = snake.segmentHeight / 2;
+  clampPositionToGrid(head.position);
   scene.add(head);
   snake.segments.push(head);
 
@@ -241,13 +272,19 @@ function clearSnake() {
   snake.pathDistances = [];
 }
 
-function createSegment(color) {
+function createSegment(color, emissive = 0x000000, emissiveIntensity = 0.4) {
   const geometry = new THREE.BoxGeometry(
     snake.segmentLength * 0.85,
     snake.segmentHeight,
     snake.segmentLength * 0.85
   );
-  const material = new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.1 });
+  const material = new THREE.MeshStandardMaterial({
+    color,
+    emissive,
+    emissiveIntensity,
+    roughness: 0.32,
+    metalness: 0.12,
+  });
   const mesh = new THREE.Mesh(geometry, material);
   return mesh;
 }
@@ -257,15 +294,18 @@ function animate(now) {
   const delta = Math.min(deltaMs / 1000, 0.05);
   lastFrameTime = now;
 
-  resolveInputDirection();
-  snake.direction.lerp(snake.targetDirection, 0.12);
-  if (snake.direction.lengthSq() > 0) {
-    snake.direction.normalize();
-  }
+  if (!isGameOver) {
+    resolveInputDirection();
+    snake.direction.lerp(snake.targetDirection, 0.12);
+    if (snake.direction.lengthSq() > 0) {
+      snake.direction.normalize();
+    }
 
-  moveSnake(delta);
-  updateSegments();
-  updateCoin(delta, now);
+    moveSnake(delta);
+    updateSegments();
+    checkSelfCollision();
+    updateCoin(delta, now);
+  }
 
   renderer.render(scene, camera);
 }
@@ -327,6 +367,7 @@ function constrainToGrid(position, previousPosition) {
     snake.targetDirection.z = snake.direction.z;
   }
 
+  clampPositionToGrid(position);
   position.y = previousPosition.y;
 }
 
@@ -346,6 +387,7 @@ function updateSegments() {
     const targetDistance = Math.max(0, totalDistance - snake.segmentLength * i);
     const position = getPositionAlongPath(targetDistance);
     snake.segments[i].position.copy(position);
+    clampPositionToGrid(snake.segments[i].position);
 
     const previousPosition = getPositionAlongPath(
       Math.min(totalDistance, Math.max(0, targetDistance + 0.01))
@@ -355,6 +397,18 @@ function updateSegments() {
       dir.normalize();
       const angle = Math.atan2(dir.x, dir.z);
       snake.segments[i].rotation.set(0, angle, 0);
+    }
+  }
+}
+
+function checkSelfCollision() {
+  if (snake.segments.length <= 2) return;
+  const headCell = positionToCell(snake.segments[0].position);
+  for (let i = 2; i < snake.segments.length; i++) {
+    const segmentCell = positionToCell(snake.segments[i].position);
+    if (segmentCell.x === headCell.x && segmentCell.z === headCell.z) {
+      endGame();
+      return;
     }
   }
 }
@@ -382,6 +436,7 @@ function getPositionAlongPath(targetDistance) {
 }
 
 function updateCoin(delta, now) {
+  if (isGameOver) return;
   if (coin.active && coin.mesh) {
     coin.mesh.rotation.y += 1.5 * delta;
     checkCoinCollision();
@@ -391,6 +446,7 @@ function updateCoin(delta, now) {
 }
 
 function spawnCoin() {
+  if (isGameOver) return;
   const attempts = 200;
   for (let i = 0; i < attempts; i++) {
     const cell = {
@@ -401,12 +457,22 @@ function spawnCoin() {
       const position = cellToPosition(cell);
       if (!coin.mesh) {
         const geometry = new THREE.CylinderGeometry(tileSize * 0.35, tileSize * 0.35, tileSize * 0.2, 24);
-        const material = new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0x332100, metalness: 0.35, roughness: 0.4 });
+        const material = new THREE.MeshStandardMaterial({
+          color: 0xfff066,
+          emissive: 0x665400,
+          emissiveIntensity: 0.9,
+          metalness: 0.45,
+          roughness: 0.28,
+        });
         coin.mesh = new THREE.Mesh(geometry, material);
         scene.add(coin.mesh);
       }
       coin.mesh.visible = true;
-      coin.mesh.position.copy(position);
+      coin.mesh.material.color.set(0xfff066);
+      coin.mesh.material.emissive.set(0x665400);
+      coin.mesh.material.emissiveIntensity = 0.9;
+      const spawnPosition = clampPositionToGrid(position.clone());
+      coin.mesh.position.copy(spawnPosition);
       coin.mesh.position.y = tileSize * 0.25;
       coin.mesh.rotation.set(0, 0, 0);
       coin.active = true;
@@ -430,6 +496,7 @@ function checkCoinCollision() {
 }
 
 function collectCoin() {
+  if (isGameOver) return;
   coin.active = false;
   if (coin.mesh) {
     coin.mesh.visible = false;
@@ -441,10 +508,11 @@ function collectCoin() {
 }
 
 function growSnake() {
-  const color = 0x4caf50;
-  const segment = createSegment(color);
+  const color = 0x1de9b6;
+  const segment = createSegment(color, 0x0b5d4b, 0.45);
   const tailPosition = snake.segments[snake.segments.length - 1].position.clone();
   segment.position.copy(tailPosition);
+  clampPositionToGrid(segment.position);
   scene.add(segment);
   snake.segments.push(segment);
 }
@@ -489,6 +557,20 @@ function positionToCell(position) {
     x: THREE.MathUtils.clamp(x, 0, gridSize - 1),
     z: THREE.MathUtils.clamp(z, 0, gridSize - 1),
   };
+}
+
+function endGame() {
+  if (isGameOver) return;
+  isGameOver = true;
+  setStatusMessage('게임 오버! 다시 시작 버튼을 누르세요.', { persist: false });
+  overlay.classList.remove('hidden');
+  overlay.setAttribute('aria-hidden', 'false');
+  coin.active = false;
+  coin.cell = null;
+  if (coin.mesh) {
+    coin.mesh.visible = false;
+  }
+  restartButton.focus();
 }
 
 function onWindowResize() {
