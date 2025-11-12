@@ -21,8 +21,13 @@ graph TD
     B --> J[HUD Renderer]
 ```
 
+<<<<<<< HEAD
 - **InputController**: DeviceOrientation과 키보드 이벤트를 통합해 표준화된 방향 요청을 생성합니다.
 - **Direction Resolver**: 현재 이동 방향과 입력을 보간하여 최종 벡터를 계산합니다.
+=======
+- **InputController**: DeviceOrientation과 키보드 이벤트를 통합해 표준화된 방향 요청을 생성하며, 카메라 기준 우/하 벡터로 기울기를 지면(XZ) 평면에 투영해 화면에서 더 낮은 방향과 이동 방향이 일치하도록 정규화합니다.
+- **Direction Resolver**: 현재 이동 방향과 입력을 보간하여 최종 벡터를 계산하며, 좌/우 화살표 입력 시 진행 방향을 상대적으로 회전시킵니다.
+>>>>>>> codex/create-web-game-using-3d.js-and-gyroscope-x0bc8g
 - **SnakeController**: 헤드 이동, 경로 버퍼 업데이트, 세그먼트 위치 계산 및 길이 증가를 담당합니다.
 - **Path Buffer**: 헤드 이동 경로를 누적 저장하며, 총 길이를 기준으로 오래된 기록을 제거합니다.
 - **CoinSpawner**: 5초 타이머 기반으로 빈 셀에 코인을 생성하고, 수집 로직을 담당합니다.
@@ -49,7 +54,7 @@ graph TD
 2. `initInput()`에서 센서 권한 버튼 및 키보드 이벤트를 설정합니다.
 3. `startGame()`이 호출되면 캐릭터와 경로 버퍼를 초기화하고 코인 생성 타이머를 시작합니다.
 4. `animate()` 루프에서:
-   - 입력 데이터를 기반으로 `currentDirection`을 보간.
+   - 입력 데이터를 기반으로 `currentDirection`을 보간하고, 키보드 입력 시 일정 각속도로 좌/우 회전.
    - `moveSnake(deltaTime)`으로 헤드 위치 갱신 및 경로 버퍼 업데이트.
    - `updateSegments()`로 세그먼트 위치 재계산.
    - `checkSelfCollision()`으로 자기 충돌 여부를 검사하고, 필요 시 게임오버 처리.

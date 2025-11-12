@@ -32,10 +32,17 @@ const coin = {
   interval: 5000,
 };
 
+const controlBasis = {
+  right: new THREE.Vector3(1, 0, 0),
+  down: new THREE.Vector3(0, 0, 1),
+};
+const upAxis = new THREE.Vector3(0, 1, 0);
+const turnQuaternion = new THREE.Quaternion();
+
 const inputState = {
   orientationSupported: false,
   orientationVector: new THREE.Vector3(),
-  keyboardVector: new THREE.Vector2(),
+  turnDirection: 0,
 };
 
 let scene, camera, renderer;
@@ -75,6 +82,7 @@ function initScene() {
   );
   camera.position.set(80, 90, 80);
   camera.lookAt(0, 0, 0);
+  updateControlBasis();
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -92,6 +100,28 @@ function initScene() {
   createGrid();
 
   window.addEventListener('resize', onWindowResize);
+}
+
+function updateControlBasis() {
+  if (!camera) return;
+  const forward = new THREE.Vector3();
+  camera.getWorldDirection(forward).normalize();
+  const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+  const down = new THREE.Vector3().crossVectors(right, forward).normalize().multiplyScalar(-1);
+
+  controlBasis.right.copy(right).setY(0);
+  if (controlBasis.right.lengthSq() === 0) {
+    controlBasis.right.set(1, 0, 0);
+  } else {
+    controlBasis.right.normalize();
+  }
+
+  controlBasis.down.copy(down).setY(0);
+  if (controlBasis.down.lengthSq() === 0) {
+    controlBasis.down.set(0, 0, 1);
+  } else {
+    controlBasis.down.normalize();
+  }
 }
 
 function createGrid() {
@@ -125,80 +155,52 @@ function initInput() {
           if (response === 'granted') {
             attachOrientationListener();
             permissionButton.hidden = true;
-            setStatusMessage('기기를 기울여 조작하세요.');
+            setStatusMessage('기기를 기울이면 화면에서 더 낮아진 방향으로 이동합니다.');
           } else {
-            setStatusMessage('센서 권한이 거부되었습니다. 화살표 키를 사용하세요.');
+            setStatusMessage('센서 권한이 거부되었습니다. 좌우 화살표 키로 방향을 회전하세요.');
             inputState.orientationSupported = false;
           }
         } catch (err) {
           console.error(err);
-          setStatusMessage('센서 권한 요청에 실패했습니다. 화살표 키를 사용하세요.');
+          setStatusMessage('센서 권한 요청에 실패했습니다. 좌우 화살표 키로 방향을 회전하세요.');
         }
       });
     } else {
       attachOrientationListener();
-      setStatusMessage('기기를 기울여 조작하세요.');
+      setStatusMessage('기기를 기울이면 화면에서 더 낮아진 방향으로 이동합니다.');
     }
   } else {
-    setStatusMessage('센서를 지원하지 않습니다. 화살표 키로 조작하세요.');
+    setStatusMessage('센서를 지원하지 않습니다. 좌우 화살표 키로 방향을 회전하세요.');
   }
 
   window.addEventListener('keydown', (event) => {
-    switch (event.key) {
-      case 'ArrowUp':
-      case 'w':
-      case 'W':
-        inputState.keyboardVector.y = -1;
-        break;
-      case 'ArrowDown':
-      case 's':
-      case 'S':
-        inputState.keyboardVector.y = 1;
-        break;
-      case 'ArrowLeft':
-      case 'a':
-      case 'A':
-        inputState.keyboardVector.x = -1;
-        break;
-      case 'ArrowRight':
-      case 'd':
-      case 'D':
-        inputState.keyboardVector.x = 1;
-        break;
-      default:
-        return;
+    if (event.repeat) return;
+    let handled = false;
+    if (event.key === 'ArrowLeft') {
+      inputState.turnDirection = -1;
+      handled = true;
+    } else if (event.key === 'ArrowRight') {
+      inputState.turnDirection = 1;
+      handled = true;
     }
-    setStatusMessage(
-      inputState.orientationSupported
-        ? '기울기로 조작 중 (키보드 보조 입력 가능)'
-        : '화살표 키로 조작 중'
-    );
+
+    if (handled) {
+      event.preventDefault();
+      setStatusMessage(
+        inputState.orientationSupported
+          ? '기울기 조작 중 · 좌우 화살표로 미세 회전'
+          : '좌우 화살표 키로 방향을 회전하세요.'
+      );
+    }
   });
 
   window.addEventListener('keyup', (event) => {
-    switch (event.key) {
-      case 'ArrowUp':
-      case 'w':
-      case 'W':
-        if (inputState.keyboardVector.y === -1) inputState.keyboardVector.y = 0;
-        break;
-      case 'ArrowDown':
-      case 's':
-      case 'S':
-        if (inputState.keyboardVector.y === 1) inputState.keyboardVector.y = 0;
-        break;
-      case 'ArrowLeft':
-      case 'a':
-      case 'A':
-        if (inputState.keyboardVector.x === -1) inputState.keyboardVector.x = 0;
-        break;
-      case 'ArrowRight':
-      case 'd':
-      case 'D':
-        if (inputState.keyboardVector.x === 1) inputState.keyboardVector.x = 0;
-        break;
-      default:
-        return;
+    if (event.key === 'ArrowLeft' && inputState.turnDirection === -1) {
+      inputState.turnDirection = 0;
+      event.preventDefault();
+    } else if (event.key === 'ArrowRight' && inputState.turnDirection === 1) {
+      inputState.turnDirection = 0;
+      event.preventDefault();
     }
   });
 }
@@ -212,19 +214,29 @@ function attachOrientationListener() {
       const betaRad = THREE.MathUtils.degToRad(beta);
       const gammaRad = THREE.MathUtils.degToRad(gamma);
 
-      const xTilt = Math.sin(gammaRad);
-      const zTilt = -Math.sin(betaRad);
-      const magnitude = Math.hypot(xTilt, zTilt);
+      const screenX = Math.sin(gammaRad);
+      const screenY = Math.sin(betaRad);
+      const magnitude = Math.hypot(screenX, screenY);
       const deadZone = 0.08;
 
       if (magnitude > deadZone) {
-        inputState.orientationVector.set(xTilt, 0, zTilt).normalize();
+        const normalizedX = screenX / magnitude;
+        const normalizedY = screenY / magnitude;
+        const worldDirection = new THREE.Vector3();
+        worldDirection.addScaledVector(controlBasis.right, normalizedX);
+        worldDirection.addScaledVector(controlBasis.down, normalizedY);
+        if (worldDirection.lengthSq() > 0) {
+          worldDirection.normalize();
+          inputState.orientationVector.copy(worldDirection);
+        } else {
+          inputState.orientationVector.setScalar(0);
+        }
       } else {
         inputState.orientationVector.setScalar(0);
       }
 
       if (!inputState.orientationSupported) {
-        setStatusMessage('기기를 기울여 조작하세요.');
+        setStatusMessage('기기를 기울이면 화면에서 더 낮아진 방향으로 이동합니다.');
       }
       inputState.orientationSupported = true;
     },
@@ -240,6 +252,7 @@ function startGame() {
   score = 0;
   updateScore();
   setStatusMessage(lastActiveStatusMessage, { persist: false });
+  inputState.turnDirection = 0;
 
   if (coin.mesh) {
     coin.mesh.visible = false;
@@ -295,7 +308,7 @@ function animate(now) {
   lastFrameTime = now;
 
   if (!isGameOver) {
-    resolveInputDirection();
+    resolveInputDirection(delta);
     snake.direction.lerp(snake.targetDirection, 0.12);
     if (snake.direction.lengthSq() > 0) {
       snake.direction.normalize();
@@ -310,14 +323,28 @@ function animate(now) {
   renderer.render(scene, camera);
 }
 
-function resolveInputDirection() {
+function resolveInputDirection(delta) {
   const orientationVec = inputState.orientationVector;
-  const keyboardVec = inputState.keyboardVector;
 
   if (orientationVec.lengthSq() > 0) {
     snake.targetDirection.copy(orientationVec);
-  } else if (keyboardVec.lengthSq() > 0) {
-    snake.targetDirection.set(keyboardVec.x, 0, keyboardVec.y).normalize();
+  } else {
+    applyKeyboardTurn(delta);
+  }
+}
+
+function applyKeyboardTurn(delta) {
+  if (inputState.turnDirection === 0) return;
+  const turnSpeed = Math.PI; // radians per second
+  const angle = inputState.turnDirection * turnSpeed * delta;
+  if (angle === 0) return;
+
+  turnQuaternion.setFromAxisAngle(upAxis, angle);
+  snake.targetDirection.applyQuaternion(turnQuaternion);
+  if (snake.targetDirection.lengthSq() === 0) {
+    snake.targetDirection.set(1, 0, 0);
+  } else {
+    snake.targetDirection.normalize();
   }
 }
 
@@ -583,4 +610,5 @@ function onWindowResize() {
   camera.bottom = -frustumSize / 2;
   camera.updateProjectionMatrix();
   renderer.setSize(width, height);
+  updateControlBasis();
 }
