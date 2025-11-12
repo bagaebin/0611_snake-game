@@ -29,7 +29,7 @@ graph TD
 - **HUD Renderer**: 점수, 센서 상태, 안내 메시지를 표시합니다.
 
 ## 데이터 구조
-- `gridSize`: 64 (셀 수)
+- `gridSize`: 32 (셀 수)
 - `tileSize`: 1 (각 셀 길이)
 - `snakeSegments`: `THREE.Mesh[]`
 - `pathPositions`: `THREE.Vector3[]` (헤드 경로)
@@ -39,7 +39,7 @@ graph TD
 ## 렌더링 구성
 - **카메라**: OrthographicCamera로 `45°` X, `45°` Y 회전된 아이소메트릭 구도.
 - **조명**: AmbientLight + DirectionalLight로 간단한 그림자 느낌을 부여합니다.
-- **지면**: 64x64 평면에 GridHelper 또는 커스텀 타일 메시를 사용합니다.
+- **지면**: 32x32 평면에 GridHelper 또는 커스텀 타일 메시를 사용합니다.
 - **프레임 루프**: `requestAnimationFrame` 기반으로 매 프레임 이동 및 렌더링을 수행합니다.
 
 ## 상호작용 흐름

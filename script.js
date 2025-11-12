@@ -5,7 +5,7 @@ const scoreEl = document.getElementById('score-value');
 const statusEl = document.getElementById('input-status');
 const permissionButton = document.getElementById('permission-button');
 
-const gridSize = 64;
+const gridSize = 32;
 const tileSize = 1;
 const halfGrid = (gridSize * tileSize) / 2;
 const frustumSize = gridSize * tileSize;
@@ -46,7 +46,7 @@ renderer.setAnimationLoop(animate);
 
 function initScene() {
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x050d1f, 40, 180);
+  scene.fog = new THREE.Fog(0x142b4f, 120, 420);
 
   const aspect = container.clientWidth / container.clientHeight || 1;
   camera = new THREE.OrthographicCamera(
@@ -63,13 +63,13 @@ function initScene() {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setClearColor(0x050d1f, 1);
+  renderer.setClearColor(0x142b4f, 1);
   container.appendChild(renderer.domElement);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.85);
   scene.add(ambient);
 
-  const directional = new THREE.DirectionalLight(0xfff3d6, 0.8);
+  const directional = new THREE.DirectionalLight(0xfff3d6, 0.9);
   directional.position.set(60, 120, 40);
   scene.add(directional);
 
