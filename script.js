@@ -402,9 +402,9 @@ function updateSegments() {
 }
 
 function checkSelfCollision() {
-  if (snake.segments.length <= 1) return;
+  if (snake.segments.length <= 2) return;
   const headCell = positionToCell(snake.segments[0].position);
-  for (let i = 1; i < snake.segments.length; i++) {
+  for (let i = 2; i < snake.segments.length; i++) {
     const segmentCell = positionToCell(snake.segments[i].position);
     if (segmentCell.x === headCell.x && segmentCell.z === headCell.z) {
       endGame();
