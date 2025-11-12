@@ -110,6 +110,63 @@ canvas {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 16, 30, 0.78);
+  backdrop-filter: blur(4px);
+  z-index: 20;
+  padding: 1.5rem;
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay-content {
+  background: rgba(12, 24, 40, 0.92);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  max-width: min(90vw, 360px);
+  box-shadow: 0 24px 40px rgba(0, 0, 0, 0.45);
+}
+
+.overlay-content h2 {
+  font-size: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.overlay-content p {
+  color: var(--muted-color);
+  margin-bottom: 1.25rem;
+  line-height: 1.6;
+}
+
+#restart-button {
+  background: linear-gradient(135deg, #1de9b6, #00bfa5);
+  color: #062724;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#restart-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(0, 191, 165, 0.35);
+}
+
+#restart-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 3px;
+}
+
 @media (max-width: 600px) {
   #app {
     padding: 0.75rem;
