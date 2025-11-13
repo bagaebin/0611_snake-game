@@ -470,17 +470,20 @@ function updateSegments() {
   if (snake.segments.length <= 1) return;
   const totalDistance = snake.pathDistances[snake.pathDistances.length - 1] ?? 0;
 
+  const sampleOffset = Math.max(0.1, snake.segmentLength * 0.35);
+
   for (let i = 1; i < snake.segments.length; i++) {
     const targetDistance = Math.max(0, totalDistance - snake.segmentLength * i);
     const position = getPositionAlongPath(targetDistance);
     snake.segments[i].position.copy(position);
     clampPositionToGrid(snake.segments[i].position);
 
-    const previousPosition = getPositionAlongPath(
-      Math.min(totalDistance, Math.max(0, targetDistance + 0.01))
-    );
-    const dir = previousPosition.clone().sub(position);
-    if (dir.lengthSq() > 0.0001) {
+    const aheadDistance = Math.min(totalDistance, targetDistance + sampleOffset);
+    const behindDistance = Math.max(0, targetDistance - sampleOffset);
+    const aheadPosition = getPositionAlongPath(aheadDistance);
+    const behindPosition = getPositionAlongPath(behindDistance);
+    const dir = aheadPosition.clone().sub(behindPosition);
+    if (dir.lengthSq() > 1e-8) {
       dir.normalize();
       const angle = Math.atan2(dir.x, dir.z);
       snake.segments[i].rotation.set(0, angle, 0);
