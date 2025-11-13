@@ -13,6 +13,10 @@ const tileSize = 1;
 const halfGrid = (gridSize * tileSize) / 2;
 const frustumSize = gridSize * tileSize;
 
+const bodyColors = [0x30e5ff, 0x0181fd];
+const bodyEmissiveColors = [0x147a9c, 0x012d5f];
+let nextBodyColorIndex = 0;
+
 const snake = {
   segments: [],
   direction: new THREE.Vector3(1, 0, 0),
@@ -69,7 +73,7 @@ function setStatusMessage(message, { persist = true } = {}) {
 
 function initScene() {
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x142b4f, 120, 420);
+  scene.fog = new THREE.Fog(0x01c756, 160, 520);
 
   const aspect = container.clientWidth / container.clientHeight || 1;
   camera = new THREE.OrthographicCamera(
@@ -87,14 +91,14 @@ function initScene() {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setClearColor(0x142b4f, 1);
+  renderer.setClearColor(0x01c756, 1);
   container.appendChild(renderer.domElement);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+  const ambient = new THREE.AmbientLight(0xffffff, 1.1);
   scene.add(ambient);
 
-  const directional = new THREE.DirectionalLight(0xfff3d6, 0.9);
-  directional.position.set(60, 120, 40);
+  const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+  directional.position.set(80, 140, 60);
   scene.add(directional);
 
   createGrid();
@@ -125,16 +129,26 @@ function updateControlBasis() {
 }
 
 function createGrid() {
-  const floorGeometry = new THREE.PlaneGeometry(gridSize * tileSize, gridSize * tileSize, gridSize, gridSize);
-  const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x1b2d4a, metalness: 0.15, roughness: 0.75 });
-  const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-  floor.rotation.x = -Math.PI / 2;
-  floor.receiveShadow = false;
-  scene.add(floor);
+  const tileGeometry = new THREE.PlaneGeometry(tileSize, tileSize);
+  const tileMaterials = [
+    new THREE.MeshStandardMaterial({ color: 0x01c756, metalness: 0.05, roughness: 0.9 }),
+    new THREE.MeshStandardMaterial({ color: 0x2bc8a3, metalness: 0.05, roughness: 0.9 }),
+  ];
 
-  const gridHelper = new THREE.GridHelper(gridSize * tileSize, gridSize, 0x6bc8ff, 0x2a4e74);
-  gridHelper.position.y = 0.01;
-  scene.add(gridHelper);
+  const board = new THREE.Group();
+  for (let x = 0; x < gridSize; x++) {
+    for (let z = 0; z < gridSize; z++) {
+      const tile = new THREE.Mesh(tileGeometry, tileMaterials[(x + z) % 2]);
+      tile.rotation.x = -Math.PI / 2;
+      tile.position.set(
+        -halfGrid + (x + 0.5) * tileSize,
+        0,
+        -halfGrid + (z + 0.5) * tileSize
+      );
+      board.add(tile);
+    }
+  }
+  scene.add(board);
 }
 
 function clampPositionToGrid(position) {
@@ -253,6 +267,7 @@ function startGame() {
   updateScore();
   setStatusMessage(lastActiveStatusMessage, { persist: false });
   inputState.turnDirection = 0;
+  nextBodyColorIndex = 0;
 
   if (coin.mesh) {
     coin.mesh.visible = false;
@@ -265,7 +280,7 @@ function startGame() {
   snake.direction.set(1, 0, 0);
   snake.targetDirection.set(1, 0, 0);
 
-  const head = createSegment(0xff7a59, 0x6e2416, 0.6);
+  const head = createSegment(0xf23d9b, 0x5e1236, 0.65);
   head.position.copy(startPosition);
   head.position.y = snake.segmentHeight / 2;
   clampPositionToGrid(head.position);
@@ -598,8 +613,11 @@ function collectCoin() {
 }
 
 function growSnake() {
-  const color = 0x1de9b6;
-  const segment = createSegment(color, 0x0b5d4b, 0.45);
+  const colorIndex = nextBodyColorIndex % bodyColors.length;
+  const color = bodyColors[colorIndex];
+  const emissive = bodyEmissiveColors[colorIndex];
+  const segment = createSegment(color, emissive, 0.42);
+  nextBodyColorIndex++;
   const tailPosition = snake.segments[snake.segments.length - 1].position.clone();
   segment.position.copy(tailPosition);
   clampPositionToGrid(segment.position);
