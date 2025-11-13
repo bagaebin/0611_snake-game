@@ -31,8 +31,6 @@ const snake = {
   segmentHeight: tileSize * 0.55,
   pathPositions: [],
   pathDistances: [],
-  shadow: null,
-  shadowHeight: raisedTileOffset + 0.01,
 };
 
 const coin = {
@@ -325,9 +323,6 @@ function startGame() {
   snake.pathPositions = [head.position.clone()];
   snake.pathDistances = [0];
 
-  ensureSnakeShadow();
-  updateSnakeShadow();
-
   coin.nextSpawn = performance.now() + coin.interval;
 }
 
@@ -336,9 +331,6 @@ function clearSnake() {
   snake.segments = [];
   snake.pathPositions = [];
   snake.pathDistances = [];
-  if (snake.shadow) {
-    snake.shadow.visible = false;
-  }
 }
 
 function createSegment(color, emissive = 0x000000, emissiveIntensity = 0.4) {
@@ -356,50 +348,6 @@ function createSegment(color, emissive = 0x000000, emissiveIntensity = 0.4) {
   });
   const mesh = new THREE.Mesh(geometry, material);
   return mesh;
-}
-
-function ensureSnakeShadow() {
-  if (snake.shadow) {
-    snake.shadow.visible = true;
-    return;
-  }
-  const geometry = new THREE.CircleGeometry(tileSize * 0.7, 32);
-  const material = new THREE.MeshBasicMaterial({
-    color: 0x6d7f99,
-    transparent: true,
-    opacity: 0.6,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  });
-  const shadow = new THREE.Mesh(geometry, material);
-  shadow.rotation.x = -Math.PI / 2;
-  shadow.renderOrder = 1;
-  snake.shadow = shadow;
-  scene.add(shadow);
-}
-
-function updateSnakeShadow() {
-  if (!snake.shadow) return;
-  const head = snake.segments[0];
-  if (!head) {
-    snake.shadow.visible = false;
-    return;
-  }
-  snake.shadow.visible = true;
-  snake.shadow.position.set(head.position.x, snake.shadowHeight, head.position.z);
-
-  const directionalStretch = new THREE.Vector3(
-    Math.abs(snake.direction.x),
-    0,
-    Math.abs(snake.direction.z)
-  );
-  const stretchX = 1 + directionalStretch.x * 0.35;
-  const stretchZ = 1 + directionalStretch.z * 0.35;
-  snake.shadow.scale.set(stretchX, stretchZ, 1);
-
-  const activity = THREE.MathUtils.clamp(snake.direction.lengthSq(), 0, 1);
-  const targetOpacity = 0.55 + activity * 0.2;
-  snake.shadow.material.opacity = targetOpacity;
 }
 
 function animate(now) {
@@ -424,7 +372,6 @@ function animate(now) {
     updateCoin(delta, now);
   }
 
-  updateSnakeShadow();
   renderer.render(scene, camera);
 }
 
