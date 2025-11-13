@@ -1,10 +1,74 @@
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Heavy.woff2') format('woff2');
+  font-weight: 900;
+  font-display: swap;
+}
+
 :root {
   --bg-color: #01c756;
-  --panel-bg: rgba(255, 255, 255, 0.2);
+  --panel-bg: rgba(255, 255, 255, 0.1);
   --card-bg: rgba(0, 0, 0, 0.15);
   --text-color: #032610;
   --muted-color: rgba(3, 38, 16, 0.7);
-  font-family: 'Segoe UI', 'Noto Sans KR', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-base: 'Stack Sans', 'Stack Sans Notch', 'Suit', 'Noto Sans KR', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-base);
 }
 
 * {
@@ -21,6 +85,23 @@ body {
   justify-content: center;
   align-items: center;
   overflow-x: hidden;
+}
+
+body,
+button,
+.scoreboard,
+.scoreboard .label,
+.status,
+.overlay-content h2,
+.overlay-content p,
+.intro-list,
+#permission-button,
+#restart-button,
+#start-button {
+  font-family: var(--font-base);
+  font-weight: 300;
+  font-optical-sizing: auto;
+  font-style: normal;
 }
 
 #app {
@@ -41,7 +122,7 @@ body {
   padding: 0.85rem 1.2rem;
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
 }
 
 .scoreboard {
@@ -55,16 +136,18 @@ body {
 
 .scoreboard .label {
   font-size: 1rem;
+  font-weight: 300;
   color: var(--muted-color);
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.1em;
 }
 
 .status {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 0.95rem;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--muted-color);
 }
 
 #permission-button {
@@ -73,7 +156,7 @@ body {
   border: none;
   border-radius: 999px;
   padding: 0.45rem 1.25rem;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -96,9 +179,9 @@ body {
   min-height: 0;
   border-radius: 24px;
   overflow: hidden;
-  background: var(--card-bg);
+  background: var(--panel-bg);
   border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 24px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
   margin: 0 auto;
 }
 
@@ -114,7 +197,7 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--panel-bg);
   backdrop-filter: blur(6px);
   z-index: 20;
   padding: 1.5rem;
@@ -125,9 +208,11 @@ canvas {
 }
 
 .overlay-content {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--panel-bg);
+  backdrop-filter: blur(128px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 20px;
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
   text-align: center;
   max-width: min(90vw, 360px);
   box-shadow: 0 24px 40px rgba(0, 0, 0, 0.35);
@@ -150,23 +235,27 @@ canvas {
 }
 
 #restart-button {
-  background: #000;
-  color: #f5f5f5;
+  background: #111;
+  color: white;
   border: none;
   border-radius: 999px;
+  margin-top: 1rem;
   padding: 0.6rem 1.5rem;
-  font-weight: 600;
+  font-size: 2rem;
+  font-weight: 300;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 #start-button {
-  background: #000;
-  color: #f5f5f5;
+  background: #111;
+  color: white;
   border: none;
   border-radius: 999px;
+  margin-top: 2rem;
   padding: 0.6rem 1.5rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 300;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
@@ -216,11 +305,9 @@ canvas {
 }
 
 .intro-list {
-  list-style: disc;
+  list-style: none;
   text-align: left;
   margin: 0.5rem 0 0;
-  padding-left: 1.25rem;
-  color: #0a3c1c;
   line-height: 1.4;
 }
 

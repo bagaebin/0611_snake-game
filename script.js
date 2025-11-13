@@ -15,8 +15,8 @@ const tileSize = 1;
 const halfGrid = (gridSize * tileSize) / 2;
 const frustumSize = gridSize * tileSize;
 
-const bodyColors = [0x30e5ff, 0x0181fd];
-const bodyEmissiveColors = [0x147a9c, 0x012d5f];
+const bodyColors = [0x4fc1ff, 0x1f8dff];
+const bodyEmissiveColors = [0x1a5e82, 0x0f4a82];
 let nextBodyColorIndex = 0;
 
 const snake = {
@@ -145,7 +145,7 @@ function updateControlBasis() {
 function createGrid() {
   const tileGeometry = new THREE.PlaneGeometry(tileSize, tileSize);
   const tileMaterials = [
-    new THREE.MeshStandardMaterial({ color: 0x29ffa4, metalness: 0.05, roughness: 0.82 }),
+    new THREE.MeshStandardMaterial({ color: 0x37ff7a, metalness: 0.05, roughness: 0.82 }),
     new THREE.MeshStandardMaterial({ color: 0xa6ffe4, metalness: 0.05, roughness: 0.82 }),
   ];
 
@@ -183,29 +183,29 @@ function initInput() {
   if (typeof DeviceOrientationEvent !== 'undefined') {
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
       permissionButton.hidden = false;
-      setStatusMessage('센서 사용을 허용해주세요.');
+      setStatusMessage('ALLOW SENSOR PERMISSION');
       permissionButton.addEventListener('click', async () => {
         try {
           const response = await DeviceOrientationEvent.requestPermission();
           if (response === 'granted') {
             attachOrientationListener();
             permissionButton.hidden = true;
-            setStatusMessage('기기를 기울이면 화면에서 더 낮아진 방향으로 이동합니다.');
+            setStatusMessage('TILT CONTROL ENABLED');
           } else {
-            setStatusMessage('센서 권한이 거부되었습니다. 좌우 화살표 키(왼쪽=시계, 오른쪽=반시계)로 방향을 회전하세요.');
+            setStatusMessage('SENSOR PERMISSION DENIED | KEY CONTROL');
             inputState.orientationSupported = false;
           }
         } catch (err) {
           console.error(err);
-          setStatusMessage('센서 권한 요청에 실패했습니다. 좌우 화살표 키(왼쪽=시계, 오른쪽=반시계)로 방향을 회전하세요.');
+          setStatusMessage('SENSOR PERMISSION REQUEST FAILED | KEY CONTROL');
         }
       });
     } else {
       attachOrientationListener();
-      setStatusMessage('기기를 기울이면 화면에서 더 낮아진 방향으로 이동합니다.');
+      setStatusMessage('TILT CONTROL ENABLED');
     }
   } else {
-    setStatusMessage('센서를 지원하지 않습니다. 좌우 화살표 키(왼쪽=시계, 오른쪽=반시계)로 방향을 회전하세요.');
+    setStatusMessage('SENSOR NOT SUPPORTED | KEY CONTROL');
   }
 
   window.addEventListener('keydown', (event) => {
@@ -223,8 +223,8 @@ function initInput() {
       event.preventDefault();
       setStatusMessage(
         inputState.orientationSupported
-          ? '기울기 조작 중 · 좌우 화살표(왼쪽=시계)로 미세 회전'
-          : '좌우 화살표 키(왼쪽=시계, 오른쪽=반시계)로 방향을 회전하세요.'
+          ? 'TILT CONTROL'
+          : 'KEY CONTROL'
       );
     }
   });
