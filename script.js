@@ -4,14 +4,23 @@ const container = document.getElementById('game-container');
 const scoreEl = document.getElementById('score-value');
 const statusEl = document.getElementById('input-status');
 const permissionButton = document.getElementById('permission-button');
+const introOverlay = document.getElementById('intro-overlay');
+const startButton = document.getElementById('start-button');
 const overlay = document.getElementById('game-over-overlay');
 const restartButton = document.getElementById('restart-button');
 const initialStatusMessage = statusEl.textContent;
 
 const gridSize = 16;
 const tileSize = 1;
+const tileThickness = 0.3;
+const raisedTileOffset = 0.08;
+const snakeHoverOffset = tileThickness * 0.75;
 const halfGrid = (gridSize * tileSize) / 2;
 const frustumSize = gridSize * tileSize;
+
+const bodyColors = [0x4fc1ff, 0x1f8dff];
+const bodyEmissiveColors = [0x1a5e82, 0x0f4a82];
+let nextBodyColorIndex = 0;
 
 const snake = {
   segments: [],
@@ -26,6 +35,7 @@ const snake = {
 
 const coin = {
   mesh: null,
+  light: null,
   active: false,
   cell: null,
   nextSpawn: performance.now() + 3000,
@@ -49,12 +59,17 @@ let scene, camera, renderer;
 let lastFrameTime = performance.now();
 let score = 0;
 let isGameOver = false;
+let isSessionActive = false;
 let lastActiveStatusMessage = initialStatusMessage;
 
 initScene();
 initInput();
-startGame();
 renderer.setAnimationLoop(animate);
+
+startButton.addEventListener('click', () => {
+  hideIntroOverlay();
+  startGame();
+});
 
 restartButton.addEventListener('click', () => {
   startGame();
@@ -67,9 +82,15 @@ function setStatusMessage(message, { persist = true } = {}) {
   }
 }
 
+function hideIntroOverlay() {
+  if (!introOverlay) return;
+  introOverlay.classList.add('hidden');
+  introOverlay.setAttribute('aria-hidden', 'true');
+}
+
 function initScene() {
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x142b4f, 120, 420);
+  scene.fog = new THREE.Fog(0x01c756, 160, 520);
 
   const aspect = container.clientWidth / container.clientHeight || 1;
   camera = new THREE.OrthographicCamera(
@@ -87,14 +108,14 @@ function initScene() {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setClearColor(0x142b4f, 1);
+  renderer.setClearColor(0x01c756, 1);
   container.appendChild(renderer.domElement);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+  const ambient = new THREE.AmbientLight(0xffffff, 1.1);
   scene.add(ambient);
 
-  const directional = new THREE.DirectionalLight(0xfff3d6, 0.9);
-  directional.position.set(60, 120, 40);
+  const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+  directional.position.set(80, 140, 60);
   scene.add(directional);
 
   createGrid();
@@ -125,16 +146,32 @@ function updateControlBasis() {
 }
 
 function createGrid() {
-  const floorGeometry = new THREE.PlaneGeometry(gridSize * tileSize, gridSize * tileSize, gridSize, gridSize);
-  const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x1b2d4a, metalness: 0.15, roughness: 0.75 });
-  const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-  floor.rotation.x = -Math.PI / 2;
-  floor.receiveShadow = false;
-  scene.add(floor);
+  const tileGeometry = new THREE.BoxGeometry(tileSize, tileThickness, tileSize);
+  const tileMaterials = [
+    new THREE.MeshStandardMaterial({ color: 0x37ff7a, metalness: 0.08, roughness: 0.7 }),
+    new THREE.MeshStandardMaterial({ color: 0xaef4c6, metalness: 0.08, roughness: 0.68 }),
+  ];
 
-  const gridHelper = new THREE.GridHelper(gridSize * tileSize, gridSize, 0x6bc8ff, 0x2a4e74);
-  gridHelper.position.y = 0.01;
-  scene.add(gridHelper);
+  const board = new THREE.Group();
+  for (let x = 0; x < gridSize; x++) {
+    for (let z = 0; z < gridSize; z++) {
+      const materialIndex = (x + z) % 2;
+      const tile = new THREE.Mesh(tileGeometry, tileMaterials[materialIndex]);
+      tile.castShadow = false;
+      tile.receiveShadow = true;
+      tile.position.set(
+        -halfGrid + (x + 0.5) * tileSize,
+        -tileThickness / 2 + (materialIndex === 1 ? raisedTileOffset : 0),
+        -halfGrid + (z + 0.5) * tileSize
+      );
+      board.add(tile);
+    }
+  }
+  scene.add(board);
+}
+
+function getSnakeBaseY() {
+  return snakeHoverOffset + snake.segmentHeight / 2;
 }
 
 function clampPositionToGrid(position) {
@@ -144,43 +181,50 @@ function clampPositionToGrid(position) {
   return position;
 }
 
+function hideCoinLight() {
+  if (coin.light) {
+    coin.light.visible = false;
+    coin.light.intensity = 0;
+  }
+}
+
 function initInput() {
   if (typeof DeviceOrientationEvent !== 'undefined') {
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
       permissionButton.hidden = false;
-      setStatusMessage('센서 사용을 허용해주세요.');
+      setStatusMessage('ALLOW SENSOR PERMISSION');
       permissionButton.addEventListener('click', async () => {
         try {
           const response = await DeviceOrientationEvent.requestPermission();
           if (response === 'granted') {
             attachOrientationListener();
             permissionButton.hidden = true;
-            setStatusMessage('기기를 기울이면 화면에서 더 낮아진 방향으로 이동합니다.');
+            setStatusMessage('TILT CONTROL ENABLED');
           } else {
-            setStatusMessage('센서 권한이 거부되었습니다. 좌우 화살표 키로 방향을 회전하세요.');
+            setStatusMessage('SENSOR PERMISSION DENIED | KEY CONTROL');
             inputState.orientationSupported = false;
           }
         } catch (err) {
           console.error(err);
-          setStatusMessage('센서 권한 요청에 실패했습니다. 좌우 화살표 키로 방향을 회전하세요.');
+          setStatusMessage('SENSOR PERMISSION REQUEST FAILED | KEY CONTROL');
         }
       });
     } else {
       attachOrientationListener();
-      setStatusMessage('기기를 기울이면 화면에서 더 낮아진 방향으로 이동합니다.');
+      setStatusMessage('TILT CONTROL ENABLED');
     }
   } else {
-    setStatusMessage('센서를 지원하지 않습니다. 좌우 화살표 키로 방향을 회전하세요.');
+    setStatusMessage('SENSOR NOT SUPPORTED | KEY CONTROL');
   }
 
   window.addEventListener('keydown', (event) => {
     if (event.repeat) return;
     let handled = false;
     if (event.key === 'ArrowLeft') {
-      inputState.turnDirection = -1;
+      inputState.turnDirection = 1;
       handled = true;
     } else if (event.key === 'ArrowRight') {
-      inputState.turnDirection = 1;
+      inputState.turnDirection = -1;
       handled = true;
     }
 
@@ -188,17 +232,17 @@ function initInput() {
       event.preventDefault();
       setStatusMessage(
         inputState.orientationSupported
-          ? '기울기 조작 중 · 좌우 화살표로 미세 회전'
-          : '좌우 화살표 키로 방향을 회전하세요.'
+          ? 'TILT CONTROL'
+          : 'KEY CONTROL'
       );
     }
   });
 
   window.addEventListener('keyup', (event) => {
-    if (event.key === 'ArrowLeft' && inputState.turnDirection === -1) {
+    if (event.key === 'ArrowLeft' && inputState.turnDirection === 1) {
       inputState.turnDirection = 0;
       event.preventDefault();
-    } else if (event.key === 'ArrowRight' && inputState.turnDirection === 1) {
+    } else if (event.key === 'ArrowRight' && inputState.turnDirection === -1) {
       inputState.turnDirection = 0;
       event.preventDefault();
     }
@@ -245,6 +289,8 @@ function attachOrientationListener() {
 }
 
 function startGame() {
+  hideIntroOverlay();
+  isSessionActive = true;
   isGameOver = false;
   overlay.classList.add('hidden');
   overlay.setAttribute('aria-hidden', 'true');
@@ -253,10 +299,12 @@ function startGame() {
   updateScore();
   setStatusMessage(lastActiveStatusMessage, { persist: false });
   inputState.turnDirection = 0;
+  nextBodyColorIndex = 0;
 
   if (coin.mesh) {
     coin.mesh.visible = false;
   }
+  hideCoinLight();
   coin.active = false;
   coin.cell = null;
 
@@ -265,9 +313,9 @@ function startGame() {
   snake.direction.set(1, 0, 0);
   snake.targetDirection.set(1, 0, 0);
 
-  const head = createSegment(0xff7a59, 0x6e2416, 0.6);
+  const head = createSegment(0xf23d9b, 0x5e1236, 0.65);
   head.position.copy(startPosition);
-  head.position.y = snake.segmentHeight / 2;
+  head.position.y = getSnakeBaseY();
   clampPositionToGrid(head.position);
   scene.add(head);
   snake.segments.push(head);
@@ -307,9 +355,13 @@ function animate(now) {
   const delta = Math.min(deltaMs / 1000, 0.05);
   lastFrameTime = now;
 
-  if (!isGameOver) {
+  if (isSessionActive && !isGameOver) {
     resolveInputDirection(delta);
     snake.direction.lerp(snake.targetDirection, 0.12);
+    const head = snake.segments[0];
+    if (head) {
+      applyBoundarySlide(snake.direction, head.position);
+    }
     if (snake.direction.lengthSq() > 0) {
       snake.direction.normalize();
     }
@@ -324,12 +376,17 @@ function animate(now) {
 }
 
 function resolveInputDirection(delta) {
+  const head = snake.segments[0];
   const orientationVec = inputState.orientationVector;
 
   if (orientationVec.lengthSq() > 0) {
     snake.targetDirection.copy(orientationVec);
   } else {
     applyKeyboardTurn(delta);
+  }
+
+  if (head) {
+    applyBoundarySlide(snake.targetDirection, head.position);
   }
 }
 
@@ -374,32 +431,83 @@ function moveSnake(delta) {
 
 function constrainToGrid(position, previousPosition) {
   const limit = halfGrid - tileSize * 0.5;
+  let clampedAxis = false;
+
   if (position.x > limit) {
     position.x = limit;
-    snake.direction.x = Math.min(snake.direction.x, 0);
-    snake.targetDirection.x = snake.direction.x;
+    clampedAxis = true;
   } else if (position.x < -limit) {
     position.x = -limit;
-    snake.direction.x = Math.max(snake.direction.x, 0);
-    snake.targetDirection.x = snake.direction.x;
+    clampedAxis = true;
   }
 
   if (position.z > limit) {
     position.z = limit;
-    snake.direction.z = Math.min(snake.direction.z, 0);
-    snake.targetDirection.z = snake.direction.z;
+    clampedAxis = true;
   } else if (position.z < -limit) {
     position.z = -limit;
-    snake.direction.z = Math.max(snake.direction.z, 0);
-    snake.targetDirection.z = snake.direction.z;
+    clampedAxis = true;
   }
 
   clampPositionToGrid(position);
+  if (clampedAxis) {
+    applyBoundarySlide(snake.direction, position);
+    applyBoundarySlide(snake.targetDirection, position);
+  }
   position.y = previousPosition.y;
 }
 
+function applyBoundarySlide(vector, position) {
+  if (!vector || typeof vector.lengthSq !== 'function' || vector.lengthSq() === 0 || !position) return;
+  const limit = halfGrid - tileSize * 0.5;
+  const epsilon = tileSize * 0.001;
+  const normals = [];
+
+  if (position.x >= limit - epsilon) normals.push(new THREE.Vector3(1, 0, 0));
+  if (position.x <= -limit + epsilon) normals.push(new THREE.Vector3(-1, 0, 0));
+  if (position.z >= limit - epsilon) normals.push(new THREE.Vector3(0, 0, 1));
+  if (position.z <= -limit + epsilon) normals.push(new THREE.Vector3(0, 0, -1));
+
+  if (normals.length === 0) return;
+
+  let adjusted = false;
+  const outwardTangent = new THREE.Vector3();
+
+  normals.forEach((normal) => {
+    const outwardComponent = vector.dot(normal);
+    if (outwardComponent > 0) {
+      vector.addScaledVector(normal, -outwardComponent);
+      adjusted = true;
+    }
+    outwardTangent.add(new THREE.Vector3().crossVectors(upAxis, normal));
+  });
+
+  if (vector.lengthSq() < 1e-6) {
+    if (outwardTangent.lengthSq() === 0) {
+      normals.forEach((normal) => {
+        outwardTangent.add(new THREE.Vector3().crossVectors(normal, upAxis));
+      });
+    }
+
+    if (outwardTangent.lengthSq() > 0) {
+      vector.copy(outwardTangent.normalize());
+      adjusted = true;
+    } else {
+      vector.set(0, 0, 0);
+    }
+  }
+
+  if (adjusted && vector.lengthSq() > 0) {
+    vector.normalize();
+  }
+}
+
 function trimPathBuffer(currentDistance) {
-  const maxDistance = snake.segmentLength * (snake.segments.length - 1) + 0.5;
+  const segmentCount = Math.max(1, snake.segments.length - 1);
+  const bodyDistance = snake.segmentLength * segmentCount;
+  const angularReserve = snake.segmentLength * 2;
+  const maxDistance = bodyDistance + angularReserve;
+
   while (snake.pathDistances.length > 1 && snake.pathDistances[1] < currentDistance - maxDistance) {
     snake.pathDistances.shift();
     snake.pathPositions.shift();
@@ -410,17 +518,20 @@ function updateSegments() {
   if (snake.segments.length <= 1) return;
   const totalDistance = snake.pathDistances[snake.pathDistances.length - 1] ?? 0;
 
+  const sampleOffset = Math.max(0.1, snake.segmentLength * 0.35);
+
   for (let i = 1; i < snake.segments.length; i++) {
     const targetDistance = Math.max(0, totalDistance - snake.segmentLength * i);
     const position = getPositionAlongPath(targetDistance);
     snake.segments[i].position.copy(position);
     clampPositionToGrid(snake.segments[i].position);
 
-    const previousPosition = getPositionAlongPath(
-      Math.min(totalDistance, Math.max(0, targetDistance + 0.01))
-    );
-    const dir = previousPosition.clone().sub(position);
-    if (dir.lengthSq() > 0.0001) {
+    const aheadDistance = Math.min(totalDistance, targetDistance + sampleOffset);
+    const behindDistance = Math.max(0, targetDistance - sampleOffset);
+    const aheadPosition = getPositionAlongPath(aheadDistance);
+    const behindPosition = getPositionAlongPath(behindDistance);
+    const dir = aheadPosition.clone().sub(behindPosition);
+    if (dir.lengthSq() > 1e-8) {
       dir.normalize();
       const angle = Math.atan2(dir.x, dir.z);
       snake.segments[i].rotation.set(0, angle, 0);
@@ -463,12 +574,25 @@ function getPositionAlongPath(targetDistance) {
 }
 
 function updateCoin(delta, now) {
-  if (isGameOver) return;
+  if (!isSessionActive || isGameOver) return;
   if (coin.active && coin.mesh) {
     coin.mesh.rotation.y += 1.5 * delta;
+    const pulse = 0.85 + Math.sin(now * 0.004) * 0.35;
+    const hover = Math.sin(now * 0.003) * tileSize * 0.05;
+    coin.mesh.position.y = tileSize * 0.25 + hover;
+    coin.mesh.material.emissiveIntensity = 0.75 + pulse * 0.4;
+    if (coin.light) {
+      coin.light.visible = true;
+      coin.light.intensity = 2.6 + pulse * 1.6;
+      coin.light.distance = tileSize * 7;
+      coin.light.position.copy(coin.mesh.position);
+      coin.light.position.y += tileSize * 1.4;
+    }
     checkCoinCollision();
   } else if (now >= coin.nextSpawn) {
     spawnCoin();
+  } else {
+    hideCoinLight();
   }
 }
 
@@ -486,22 +610,33 @@ function spawnCoin() {
         const geometry = new THREE.CylinderGeometry(tileSize * 0.35, tileSize * 0.35, tileSize * 0.2, 24);
         const material = new THREE.MeshStandardMaterial({
           color: 0xfff066,
-          emissive: 0x665400,
-          emissiveIntensity: 0.9,
+          emissive: 0x7a5100,
+          emissiveIntensity: 0.85,
           metalness: 0.45,
           roughness: 0.28,
         });
         coin.mesh = new THREE.Mesh(geometry, material);
         scene.add(coin.mesh);
       }
+      if (!coin.light) {
+        coin.light = new THREE.PointLight(0xfff066, 0, tileSize * 7, 2);
+        coin.light.castShadow = false;
+        scene.add(coin.light);
+      }
       coin.mesh.visible = true;
       coin.mesh.material.color.set(0xfff066);
-      coin.mesh.material.emissive.set(0x665400);
-      coin.mesh.material.emissiveIntensity = 0.9;
+      coin.mesh.material.emissive.set(0x7a5100);
+      coin.mesh.material.emissiveIntensity = 0.85;
       const spawnPosition = clampPositionToGrid(position.clone());
       coin.mesh.position.copy(spawnPosition);
       coin.mesh.position.y = tileSize * 0.25;
       coin.mesh.rotation.set(0, 0, 0);
+      if (coin.light) {
+        coin.light.visible = true;
+        coin.light.intensity = 2.6;
+        coin.light.position.copy(coin.mesh.position);
+        coin.light.position.y += tileSize * 1.4;
+      }
       coin.active = true;
       coin.cell = cell;
       return;
@@ -528,6 +663,7 @@ function collectCoin() {
   if (coin.mesh) {
     coin.mesh.visible = false;
   }
+  hideCoinLight();
   coin.nextSpawn = performance.now() + coin.interval;
   score += 1;
   updateScore();
@@ -535,10 +671,14 @@ function collectCoin() {
 }
 
 function growSnake() {
-  const color = 0x1de9b6;
-  const segment = createSegment(color, 0x0b5d4b, 0.45);
+  const colorIndex = nextBodyColorIndex % bodyColors.length;
+  const color = bodyColors[colorIndex];
+  const emissive = bodyEmissiveColors[colorIndex];
+  const segment = createSegment(color, emissive, 0.42);
+  nextBodyColorIndex++;
   const tailPosition = snake.segments[snake.segments.length - 1].position.clone();
   segment.position.copy(tailPosition);
+  segment.position.y = getSnakeBaseY();
   clampPositionToGrid(segment.position);
   scene.add(segment);
   snake.segments.push(segment);
@@ -572,7 +712,7 @@ function getRandomEmptyCell() {
 function cellToPosition(cell) {
   return new THREE.Vector3(
     -halfGrid + (cell.x + 0.5) * tileSize,
-    snake.segmentHeight / 2,
+    getSnakeBaseY(),
     -halfGrid + (cell.z + 0.5) * tileSize
   );
 }
@@ -589,6 +729,7 @@ function positionToCell(position) {
 function endGame() {
   if (isGameOver) return;
   isGameOver = true;
+  isSessionActive = false;
   setStatusMessage('게임 오버! 다시 시작 버튼을 누르세요.', { persist: false });
   overlay.classList.remove('hidden');
   overlay.setAttribute('aria-hidden', 'false');
@@ -597,6 +738,7 @@ function endGame() {
   if (coin.mesh) {
     coin.mesh.visible = false;
   }
+  hideCoinLight();
   restartButton.focus();
 }
 

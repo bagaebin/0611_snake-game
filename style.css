@@ -1,10 +1,74 @@
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Suit';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Heavy.woff2') format('woff2');
+  font-weight: 900;
+  font-display: swap;
+}
+
 :root {
-  --bg-color: #0b1726;
-  --accent-color: #ffb400;
-  --panel-bg: rgba(12, 24, 40, 0.8);
-  --text-color: #f5f7fb;
-  --muted-color: #a5b3c6;
-  font-family: 'Segoe UI', 'Noto Sans KR', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --bg-color: #01c756;
+  --panel-bg: rgba(255, 255, 255, 0.1);
+  --card-bg: rgba(0, 0, 0, 0.15);
+  --text-color: #032610;
+  --muted-color: rgba(3, 38, 16, 0.7);
+  --font-base: 'Stack Sans', 'Stack Sans Notch', 'Suit', 'Noto Sans KR', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-base);
 }
 
 * {
@@ -15,11 +79,29 @@
 
 body {
   min-height: 100vh;
-  background: radial-gradient(circle at top, #13243b 0%, #06101e 60%, #03070d 100%);
+  background: var(--bg-color);
   color: var(--text-color);
   display: flex;
   justify-content: center;
-  align-items: stretch;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+body,
+button,
+.scoreboard,
+.scoreboard .label,
+.status,
+.overlay-content h2,
+.overlay-content p,
+.intro-list,
+#permission-button,
+#restart-button,
+#start-button {
+  font-family: var(--font-base);
+  font-weight: 300;
+  font-optical-sizing: auto;
+  font-style: normal;
 }
 
 #app {
@@ -27,7 +109,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 1rem;
+  padding: 1.25rem;
+  margin: auto;
 }
 
 .hud {
@@ -35,10 +118,11 @@ body {
   justify-content: space-between;
   align-items: center;
   background: var(--panel-bg);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  backdrop-filter: blur(6px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  border-radius: 16px;
+  padding: 0.85rem 1.2rem;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
 }
 
 .scoreboard {
@@ -47,51 +131,58 @@ body {
   gap: 0.5rem;
   font-size: 1.5rem;
   font-weight: 600;
+  color: var(--text-color);
 }
 
 .scoreboard .label {
   font-size: 1rem;
+  font-weight: 300;
   color: var(--muted-color);
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.1em;
 }
 
 .status {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 0.95rem;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--muted-color);
 }
 
 #permission-button {
-  background: linear-gradient(135deg, #ffb400, #ff8030);
-  color: #111;
+  background: #000;
+  color: #f5f5f5;
   border: none;
   border-radius: 999px;
   padding: 0.45rem 1.25rem;
-  font-weight: 600;
+  font-weight: 400;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 #permission-button:focus-visible {
-  outline: 2px solid #fff2b3;
-  outline-offset: 3px;
+  outline: 1px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 4px;
 }
 
 #permission-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(255, 128, 48, 0.35);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
 #game-container {
-  flex: 1;
+  flex: none;
   position: relative;
-  min-height: 420px;
-  border-radius: 16px;
+  width: 100%;
+  height: min(70vw, max(0px, calc(100vh - 180px)), 720px);
+  min-height: 0;
+  border-radius: 24px;
   overflow: hidden;
-  background: rgba(3, 10, 20, 0.75);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 20px 40px rgba(0, 0, 0, 0.55);
+  background: var(--panel-bg);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  margin: 0 auto;
 }
 
 canvas {
@@ -100,24 +191,14 @@ canvas {
   height: 100% !important;
 }
 
-.instructions {
-  background: var(--panel-bg);
-  border-radius: 12px;
-  padding: 0.85rem 1rem;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: var(--muted-color);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-}
-
 .overlay {
   position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(6, 16, 30, 0.78);
-  backdrop-filter: blur(4px);
+  background: var(--panel-bg);
+  backdrop-filter: blur(6px);
   z-index: 20;
   padding: 1.5rem;
 }
@@ -127,49 +208,83 @@ canvas {
 }
 
 .overlay-content {
-  background: rgba(12, 24, 40, 0.92);
-  border-radius: 16px;
-  padding: 1.5rem;
+  background: var(--panel-bg);
+  backdrop-filter: blur(128px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 20px;
+  padding: 1rem 1.5rem;
   text-align: center;
   max-width: min(90vw, 360px);
-  box-shadow: 0 24px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 24px 40px rgba(0, 0, 0, 0.35);
+}
+
+.overlay-content.intro {
+  max-width: min(90vw, 420px);
 }
 
 .overlay-content h2 {
-  font-size: 1.75rem;
-  margin-bottom: 0.75rem;
+  font-size: 2rem;
+  font-weight: 500;
+  color: #051f11;
 }
 
 .overlay-content p {
-  color: var(--muted-color);
+  color: #0a3c1c;
   margin-bottom: 1.25rem;
   line-height: 1.6;
 }
 
 #restart-button {
-  background: linear-gradient(135deg, #1de9b6, #00bfa5);
-  color: #062724;
+  background: #111;
+  color: white;
   border: none;
   border-radius: 999px;
+  margin-top: 0.8rem;
   padding: 0.6rem 1.5rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 300;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+#start-button {
+  background: #111;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  margin-top: 2rem;
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 300;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+#start-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+#start-button:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
+}
+
 #restart-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(0, 191, 165, 0.35);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 #restart-button:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.8);
-  outline-offset: 3px;
+  outline: 1px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
 }
 
 @media (max-width: 600px) {
   #app {
-    padding: 0.75rem;
+    padding: 0.85rem;
     gap: 0.75rem;
   }
 
@@ -185,6 +300,17 @@ canvas {
   }
 
   #game-container {
-    min-height: 360px;
+    height: min(90vw, max(0px, calc(100vh - 160px)), 520px);
   }
+}
+
+.intro-list {
+  list-style: none;
+  text-align: left;
+  margin: 0.5rem 0 0;
+  line-height: 1.4;
+}
+
+.intro-list li + li {
+  margin-top: 0.35rem;
 }

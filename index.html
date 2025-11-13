@@ -3,8 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Gyro Snake Isometric</title>
+    <title>SNAKE IN YOUR PHONE</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Notch:wght@200..700&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="app">
@@ -19,13 +22,22 @@
         </div>
       </header>
       <main id="game-container" role="application" aria-label="16x16 격자 게임 공간"></main>
-      <footer class="instructions">
-        <p>
-          스마트폰을 기울여 캐릭터를 조종하세요. 기기를 기울였을 때 화면에서 더 낮아진 방향으로 전진합니다. 코인을
-          먹으면 몸집이 커집니다. 센서가 동작하지 않으면 버튼을 눌러 권한을 허용하거나, 데스크톱에서는 좌우 화살표
-          키로 방향을 회전하세요.
-        </p>
-      </footer>
+      <div
+        id="intro-overlay"
+        class="overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="intro-title"
+        aria-describedby="intro-body"
+      >
+        <div class="overlay-content intro">
+          <ul class="intro-list">
+            <li>MOBILE | Tilt your phone</li>
+            <li>PC | Use the left and right arrow keys</li>
+          </ul>
+          <button id="start-button" type="button">START</button>
+        </div>
+      </div>
       <div
         id="game-over-overlay"
         class="overlay hidden"
@@ -35,9 +47,8 @@
         aria-describedby="game-over-message"
       >
         <div class="overlay-content">
-          <h2 id="game-over-title">게임 오버</h2>
-          <p id="game-over-message">몸통에 부딪혔어요! 다시 도전해보세요.</p>
-          <button id="restart-button" type="button">다시 시작</button>
+          <h2 id="game-over-title">GAME OVER</h2>
+          <button id="restart-button" type="button">RESTART</button>
         </div>
       </div>
     </div>
