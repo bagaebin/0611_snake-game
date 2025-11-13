@@ -455,7 +455,11 @@ function applyBoundarySlide(vector, position) {
 }
 
 function trimPathBuffer(currentDistance) {
-  const maxDistance = snake.segmentLength * (snake.segments.length - 1) + 0.5;
+  const segmentCount = Math.max(1, snake.segments.length - 1);
+  const bodyDistance = snake.segmentLength * segmentCount;
+  const angularReserve = snake.segmentLength * 2;
+  const maxDistance = bodyDistance + angularReserve;
+
   while (snake.pathDistances.length > 1 && snake.pathDistances[1] < currentDistance - maxDistance) {
     snake.pathDistances.shift();
     snake.pathPositions.shift();
