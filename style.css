@@ -92,7 +92,7 @@ body {
   flex: none;
   position: relative;
   width: 100%;
-  height: min(70vw, max(0px, calc(100vh - 220px)), 720px);
+  height: min(70vw, max(0px, calc(100vh - 180px)), 720px);
   min-height: 0;
   border-radius: 24px;
   overflow: hidden;
@@ -106,17 +106,6 @@ canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
-}
-
-.instructions {
-  background: var(--panel-bg);
-  border-radius: 16px;
-  padding: 0.85rem 1rem;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: var(--muted-color);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
 }
 
 .overlay {
@@ -222,7 +211,7 @@ canvas {
   }
 
   #game-container {
-    height: min(90vw, max(0px, calc(100vh - 180px)), 520px);
+    height: min(90vw, max(0px, calc(100vh - 160px)), 520px);
   }
 }
 

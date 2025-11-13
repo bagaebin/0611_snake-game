@@ -32,7 +32,7 @@ const snake = {
 
 const coin = {
   mesh: null,
-  glow: null,
+  light: null,
   active: false,
   cell: null,
   nextSpawn: performance.now() + 3000,
@@ -145,8 +145,8 @@ function updateControlBasis() {
 function createGrid() {
   const tileGeometry = new THREE.PlaneGeometry(tileSize, tileSize);
   const tileMaterials = [
-    new THREE.MeshStandardMaterial({ color: 0x12ef76, metalness: 0.05, roughness: 0.85 }),
-    new THREE.MeshStandardMaterial({ color: 0x4ff2c1, metalness: 0.05, roughness: 0.85 }),
+    new THREE.MeshStandardMaterial({ color: 0x29ffa4, metalness: 0.05, roughness: 0.82 }),
+    new THREE.MeshStandardMaterial({ color: 0xa6ffe4, metalness: 0.05, roughness: 0.82 }),
   ];
 
   const board = new THREE.Group();
@@ -170,6 +170,13 @@ function clampPositionToGrid(position) {
   position.x = THREE.MathUtils.clamp(position.x, -limit, limit);
   position.z = THREE.MathUtils.clamp(position.z, -limit, limit);
   return position;
+}
+
+function hideCoinLight() {
+  if (coin.light) {
+    coin.light.visible = false;
+    coin.light.intensity = 0;
+  }
 }
 
 function initInput() {
@@ -288,9 +295,7 @@ function startGame() {
   if (coin.mesh) {
     coin.mesh.visible = false;
   }
-  if (coin.glow) {
-    coin.glow.visible = false;
-  }
+  hideCoinLight();
   coin.active = false;
   coin.cell = null;
 
@@ -563,19 +568,22 @@ function updateCoin(delta, now) {
   if (!isSessionActive || isGameOver) return;
   if (coin.active && coin.mesh) {
     coin.mesh.rotation.y += 1.5 * delta;
-    if (coin.glow) {
-      const pulse = 1 + Math.sin(now * 0.006) * 0.25;
-      const scale = tileSize * 1.6 * pulse;
-      coin.glow.visible = true;
-      coin.glow.position.copy(coin.mesh.position);
-      coin.glow.position.y = coin.mesh.position.y + tileSize * 0.05;
-      coin.glow.scale.set(scale, scale, 1);
+    const pulse = 0.85 + Math.sin(now * 0.004) * 0.35;
+    const hover = Math.sin(now * 0.003) * tileSize * 0.05;
+    coin.mesh.position.y = tileSize * 0.25 + hover;
+    coin.mesh.material.emissiveIntensity = 0.75 + pulse * 0.4;
+    if (coin.light) {
+      coin.light.visible = true;
+      coin.light.intensity = 2.6 + pulse * 1.6;
+      coin.light.distance = tileSize * 7;
+      coin.light.position.copy(coin.mesh.position);
+      coin.light.position.y += tileSize * 1.4;
     }
     checkCoinCollision();
   } else if (now >= coin.nextSpawn) {
     spawnCoin();
-  } else if (coin.glow) {
-    coin.glow.visible = false;
+  } else {
+    hideCoinLight();
   }
 }
 
@@ -593,40 +601,32 @@ function spawnCoin() {
         const geometry = new THREE.CylinderGeometry(tileSize * 0.35, tileSize * 0.35, tileSize * 0.2, 24);
         const material = new THREE.MeshStandardMaterial({
           color: 0xfff066,
-          emissive: 0x665400,
-          emissiveIntensity: 0.9,
+          emissive: 0x7a5100,
+          emissiveIntensity: 0.85,
           metalness: 0.45,
           roughness: 0.28,
         });
         coin.mesh = new THREE.Mesh(geometry, material);
         scene.add(coin.mesh);
       }
-      if (!coin.glow) {
-        const glowMaterial = new THREE.SpriteMaterial({
-          color: 0xfff066,
-          transparent: true,
-          opacity: 0.5,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-          depthTest: false,
-        });
-        coin.glow = new THREE.Sprite(glowMaterial);
-        coin.glow.renderOrder = 2;
-        scene.add(coin.glow);
+      if (!coin.light) {
+        coin.light = new THREE.PointLight(0xfff066, 0, tileSize * 7, 2);
+        coin.light.castShadow = false;
+        scene.add(coin.light);
       }
       coin.mesh.visible = true;
       coin.mesh.material.color.set(0xfff066);
-      coin.mesh.material.emissive.set(0x665400);
-      coin.mesh.material.emissiveIntensity = 0.9;
+      coin.mesh.material.emissive.set(0x7a5100);
+      coin.mesh.material.emissiveIntensity = 0.85;
       const spawnPosition = clampPositionToGrid(position.clone());
       coin.mesh.position.copy(spawnPosition);
       coin.mesh.position.y = tileSize * 0.25;
       coin.mesh.rotation.set(0, 0, 0);
-      if (coin.glow) {
-        coin.glow.visible = true;
-        coin.glow.position.copy(coin.mesh.position);
-        const scale = tileSize * 1.6;
-        coin.glow.scale.set(scale, scale, 1);
+      if (coin.light) {
+        coin.light.visible = true;
+        coin.light.intensity = 2.6;
+        coin.light.position.copy(coin.mesh.position);
+        coin.light.position.y += tileSize * 1.4;
       }
       coin.active = true;
       coin.cell = cell;
@@ -654,9 +654,7 @@ function collectCoin() {
   if (coin.mesh) {
     coin.mesh.visible = false;
   }
-  if (coin.glow) {
-    coin.glow.visible = false;
-  }
+  hideCoinLight();
   coin.nextSpawn = performance.now() + coin.interval;
   score += 1;
   updateScore();
@@ -730,9 +728,7 @@ function endGame() {
   if (coin.mesh) {
     coin.mesh.visible = false;
   }
-  if (coin.glow) {
-    coin.glow.visible = false;
-  }
+  hideCoinLight();
   restartButton.focus();
 }
 
