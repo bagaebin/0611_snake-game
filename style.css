@@ -223,8 +223,8 @@ canvas {
 }
 
 .overlay-content h2 {
-  font-size: 1.75rem;
-  margin-bottom: 0.75rem;
+  font-size: 2rem;
+  font-weight: 500;
   color: #051f11;
 }
 
@@ -239,9 +239,9 @@ canvas {
   color: white;
   border: none;
   border-radius: 999px;
-  margin-top: 1rem;
+  margin-top: 0.8rem;
   padding: 0.6rem 1.5rem;
-  font-size: 2rem;
+  font-size: 1rem;
   font-weight: 300;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -264,22 +264,22 @@ canvas {
 
 #start-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 #start-button:focus-visible {
   outline: 1px solid rgba(255, 255, 255, 0.85);
-  outline-offset: 4px;
+  outline-offset: 2px;
 }
 
 #restart-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 #restart-button:focus-visible {
   outline: 1px solid rgba(255, 255, 255, 0.85);
-  outline-offset: 4px;
+  outline-offset: 2px;
 }
 
 @media (max-width: 600px) {
