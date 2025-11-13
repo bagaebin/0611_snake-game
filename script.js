@@ -16,7 +16,7 @@ const tileThickness = 0.3;
 const raisedTileOffset = 0.08;
 const snakeHoverOffset = tileThickness * 0.75;
 const halfGrid = (gridSize * tileSize) / 2;
-const frustumSize = gridSize * tileSize;
+const boardExtent = gridSize * tileSize;
 
 const bodyColors = [0x4fc1ff, 0x1f8dff];
 const bodyEmissiveColors = [0x1a5e82, 0x0f4a82];
@@ -92,18 +92,18 @@ function initScene() {
   scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x01c756, 160, 520);
 
-  const aspect = container.clientWidth / container.clientHeight || 1;
   camera = new THREE.OrthographicCamera(
-    (-frustumSize * aspect) / 2,
-    (frustumSize * aspect) / 2,
-    frustumSize / 2,
-    -frustumSize / 2,
+    -halfGrid,
+    halfGrid,
+    halfGrid,
+    -halfGrid,
     0.1,
     500
   );
   camera.position.set(80, 90, 80);
   camera.lookAt(0, 0, 0);
   updateControlBasis();
+  updateCameraFrustum();
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -459,6 +459,7 @@ function constrainToGrid(position, previousPosition) {
 
 function applyBoundarySlide(vector, position) {
   if (!vector || typeof vector.lengthSq !== 'function' || vector.lengthSq() === 0 || !position) return;
+  const desiredDirection = vector.clone();
   const limit = halfGrid - tileSize * 0.5;
   const epsilon = tileSize * 0.001;
   const normals = [];
@@ -483,15 +484,39 @@ function applyBoundarySlide(vector, position) {
   });
 
   if (vector.lengthSq() < 1e-6) {
-    if (outwardTangent.lengthSq() === 0) {
-      normals.forEach((normal) => {
-        outwardTangent.add(new THREE.Vector3().crossVectors(normal, upAxis));
-      });
+    const tangentCandidates = [];
+    normals.forEach((normal) => {
+      const tangent = new THREE.Vector3().crossVectors(upAxis, normal);
+      if (tangent.lengthSq() > 0) {
+        tangent.normalize();
+        tangentCandidates.push(tangent);
+      }
+    });
+
+    let bestCandidate = null;
+    let bestAlignment = -Infinity;
+    tangentCandidates.forEach((candidate) => {
+      let alignment = desiredDirection.dot(candidate);
+      const adjustedCandidate = candidate.clone();
+      if (alignment < 0) {
+        alignment = -alignment;
+        adjustedCandidate.negate();
+      }
+      if (alignment > bestAlignment) {
+        bestAlignment = alignment;
+        bestCandidate = adjustedCandidate;
+      }
+    });
+
+    if (!bestCandidate && outwardTangent.lengthSq() > 0) {
+      bestCandidate = outwardTangent.normalize();
     }
 
-    if (outwardTangent.lengthSq() > 0) {
-      vector.copy(outwardTangent.normalize());
+    if (bestCandidate) {
+      vector.copy(bestCandidate);
       adjusted = true;
+    } else if (desiredDirection.lengthSq() > 0) {
+      vector.copy(desiredDirection.normalize());
     } else {
       vector.set(0, 0, 0);
     }
@@ -745,12 +770,27 @@ function endGame() {
 function onWindowResize() {
   const width = container.clientWidth;
   const height = container.clientHeight;
-  const aspect = width / height || 1;
-  camera.left = (-frustumSize * aspect) / 2;
-  camera.right = (frustumSize * aspect) / 2;
-  camera.top = frustumSize / 2;
-  camera.bottom = -frustumSize / 2;
-  camera.updateProjectionMatrix();
   renderer.setSize(width, height);
+  updateCameraFrustum();
   updateControlBasis();
+}
+
+function updateCameraFrustum() {
+  if (!camera || !container) return;
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  const aspect = width / height || 1;
+  const baseHalf = boardExtent / 2;
+  if (aspect >= 1) {
+    camera.left = -baseHalf * aspect;
+    camera.right = baseHalf * aspect;
+    camera.top = baseHalf;
+    camera.bottom = -baseHalf;
+  } else {
+    camera.left = -baseHalf;
+    camera.right = baseHalf;
+    camera.top = baseHalf / aspect;
+    camera.bottom = -baseHalf / aspect;
+  }
+  camera.updateProjectionMatrix();
 }
