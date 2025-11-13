@@ -27,6 +27,28 @@
         </p>
       </footer>
       <div
+        id="intro-overlay"
+        class="overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="intro-title"
+        aria-describedby="intro-body"
+      >
+        <div class="overlay-content intro">
+          <h2 id="intro-title">네온 스네이크 런</h2>
+          <p id="intro-body">
+            16x16 격자에서 캐릭터를 움직이며 코인을 모아 몸통을 늘려보세요. 기기를 기울이면 화면에서 더 낮아진
+            방향으로 전진하고, 좌우 화살표 키는 각각 시계/반시계 방향으로 머리를 회전시킵니다.
+          </p>
+          <ul class="intro-list">
+            <li>센서 권한이 필요할 경우 상단 버튼으로 허용하세요.</li>
+            <li>코인은 5초마다 무작위 위치에서 생성되며 빛나면서 등장합니다.</li>
+            <li>몸통의 두 번째 큐브와의 접촉은 허용되지만 그 이후와 닿으면 게임이 종료됩니다.</li>
+          </ul>
+          <button id="start-button" type="button">게임 시작</button>
+        </div>
+      </div>
+      <div
         id="game-over-overlay"
         class="overlay hidden"
         role="alertdialog"

@@ -4,6 +4,8 @@ const container = document.getElementById('game-container');
 const scoreEl = document.getElementById('score-value');
 const statusEl = document.getElementById('input-status');
 const permissionButton = document.getElementById('permission-button');
+const introOverlay = document.getElementById('intro-overlay');
+const startButton = document.getElementById('start-button');
 const overlay = document.getElementById('game-over-overlay');
 const restartButton = document.getElementById('restart-button');
 const initialStatusMessage = statusEl.textContent;
@@ -30,6 +32,7 @@ const snake = {
 
 const coin = {
   mesh: null,
+  glow: null,
   active: false,
   cell: null,
   nextSpawn: performance.now() + 3000,
@@ -53,12 +56,17 @@ let scene, camera, renderer;
 let lastFrameTime = performance.now();
 let score = 0;
 let isGameOver = false;
+let isSessionActive = false;
 let lastActiveStatusMessage = initialStatusMessage;
 
 initScene();
 initInput();
-startGame();
 renderer.setAnimationLoop(animate);
+
+startButton.addEventListener('click', () => {
+  hideIntroOverlay();
+  startGame();
+});
 
 restartButton.addEventListener('click', () => {
   startGame();
@@ -69,6 +77,12 @@ function setStatusMessage(message, { persist = true } = {}) {
   if (persist) {
     lastActiveStatusMessage = message;
   }
+}
+
+function hideIntroOverlay() {
+  if (!introOverlay) return;
+  introOverlay.classList.add('hidden');
+  introOverlay.setAttribute('aria-hidden', 'true');
 }
 
 function initScene() {
@@ -131,8 +145,8 @@ function updateControlBasis() {
 function createGrid() {
   const tileGeometry = new THREE.PlaneGeometry(tileSize, tileSize);
   const tileMaterials = [
-    new THREE.MeshStandardMaterial({ color: 0x01c756, metalness: 0.05, roughness: 0.9 }),
-    new THREE.MeshStandardMaterial({ color: 0x2bc8a3, metalness: 0.05, roughness: 0.9 }),
+    new THREE.MeshStandardMaterial({ color: 0x12ef76, metalness: 0.05, roughness: 0.85 }),
+    new THREE.MeshStandardMaterial({ color: 0x4ff2c1, metalness: 0.05, roughness: 0.85 }),
   ];
 
   const board = new THREE.Group();
@@ -259,6 +273,8 @@ function attachOrientationListener() {
 }
 
 function startGame() {
+  hideIntroOverlay();
+  isSessionActive = true;
   isGameOver = false;
   overlay.classList.add('hidden');
   overlay.setAttribute('aria-hidden', 'true');
@@ -271,6 +287,9 @@ function startGame() {
 
   if (coin.mesh) {
     coin.mesh.visible = false;
+  }
+  if (coin.glow) {
+    coin.glow.visible = false;
   }
   coin.active = false;
   coin.cell = null;
@@ -322,7 +341,7 @@ function animate(now) {
   const delta = Math.min(deltaMs / 1000, 0.05);
   lastFrameTime = now;
 
-  if (!isGameOver) {
+  if (isSessionActive && !isGameOver) {
     resolveInputDirection(delta);
     snake.direction.lerp(snake.targetDirection, 0.12);
     const head = snake.segments[0];
@@ -541,12 +560,22 @@ function getPositionAlongPath(targetDistance) {
 }
 
 function updateCoin(delta, now) {
-  if (isGameOver) return;
+  if (!isSessionActive || isGameOver) return;
   if (coin.active && coin.mesh) {
     coin.mesh.rotation.y += 1.5 * delta;
+    if (coin.glow) {
+      const pulse = 1 + Math.sin(now * 0.006) * 0.25;
+      const scale = tileSize * 1.6 * pulse;
+      coin.glow.visible = true;
+      coin.glow.position.copy(coin.mesh.position);
+      coin.glow.position.y = coin.mesh.position.y + tileSize * 0.05;
+      coin.glow.scale.set(scale, scale, 1);
+    }
     checkCoinCollision();
   } else if (now >= coin.nextSpawn) {
     spawnCoin();
+  } else if (coin.glow) {
+    coin.glow.visible = false;
   }
 }
 
@@ -572,6 +601,19 @@ function spawnCoin() {
         coin.mesh = new THREE.Mesh(geometry, material);
         scene.add(coin.mesh);
       }
+      if (!coin.glow) {
+        const glowMaterial = new THREE.SpriteMaterial({
+          color: 0xfff066,
+          transparent: true,
+          opacity: 0.5,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          depthTest: false,
+        });
+        coin.glow = new THREE.Sprite(glowMaterial);
+        coin.glow.renderOrder = 2;
+        scene.add(coin.glow);
+      }
       coin.mesh.visible = true;
       coin.mesh.material.color.set(0xfff066);
       coin.mesh.material.emissive.set(0x665400);
@@ -580,6 +622,12 @@ function spawnCoin() {
       coin.mesh.position.copy(spawnPosition);
       coin.mesh.position.y = tileSize * 0.25;
       coin.mesh.rotation.set(0, 0, 0);
+      if (coin.glow) {
+        coin.glow.visible = true;
+        coin.glow.position.copy(coin.mesh.position);
+        const scale = tileSize * 1.6;
+        coin.glow.scale.set(scale, scale, 1);
+      }
       coin.active = true;
       coin.cell = cell;
       return;
@@ -605,6 +653,9 @@ function collectCoin() {
   coin.active = false;
   if (coin.mesh) {
     coin.mesh.visible = false;
+  }
+  if (coin.glow) {
+    coin.glow.visible = false;
   }
   coin.nextSpawn = performance.now() + coin.interval;
   score += 1;
@@ -670,6 +721,7 @@ function positionToCell(position) {
 function endGame() {
   if (isGameOver) return;
   isGameOver = true;
+  isSessionActive = false;
   setStatusMessage('게임 오버! 다시 시작 버튼을 누르세요.', { persist: false });
   overlay.classList.remove('hidden');
   overlay.setAttribute('aria-hidden', 'false');
@@ -677,6 +729,9 @@ function endGame() {
   coin.cell = null;
   if (coin.mesh) {
     coin.mesh.visible = false;
+  }
+  if (coin.glow) {
+    coin.glow.visible = false;
   }
   restartButton.focus();
 }
