@@ -413,30 +413,44 @@ function applyBoundarySlide(vector, position) {
   if (!vector || typeof vector.lengthSq !== 'function' || vector.lengthSq() === 0 || !position) return;
   const limit = halfGrid - tileSize * 0.5;
   const epsilon = tileSize * 0.001;
+  const normals = [];
+
+  if (position.x >= limit - epsilon) normals.push(new THREE.Vector3(1, 0, 0));
+  if (position.x <= -limit + epsilon) normals.push(new THREE.Vector3(-1, 0, 0));
+  if (position.z >= limit - epsilon) normals.push(new THREE.Vector3(0, 0, 1));
+  if (position.z <= -limit + epsilon) normals.push(new THREE.Vector3(0, 0, -1));
+
+  if (normals.length === 0) return;
+
   let adjusted = false;
+  const outwardTangent = new THREE.Vector3();
 
-  if (position.x >= limit - epsilon && vector.x > 0) {
-    vector.x = 0;
-    adjusted = true;
-  } else if (position.x <= -limit + epsilon && vector.x < 0) {
-    vector.x = 0;
-    adjusted = true;
-  }
+  normals.forEach((normal) => {
+    const outwardComponent = vector.dot(normal);
+    if (outwardComponent > 0) {
+      vector.addScaledVector(normal, -outwardComponent);
+      adjusted = true;
+    }
+    outwardTangent.add(new THREE.Vector3().crossVectors(upAxis, normal));
+  });
 
-  if (position.z >= limit - epsilon && vector.z > 0) {
-    vector.z = 0;
-    adjusted = true;
-  } else if (position.z <= -limit + epsilon && vector.z < 0) {
-    vector.z = 0;
-    adjusted = true;
-  }
+  if (vector.lengthSq() < 1e-6) {
+    if (outwardTangent.lengthSq() === 0) {
+      normals.forEach((normal) => {
+        outwardTangent.add(new THREE.Vector3().crossVectors(normal, upAxis));
+      });
+    }
 
-  if (adjusted) {
-    if (vector.lengthSq() > 0) {
-      vector.normalize();
+    if (outwardTangent.lengthSq() > 0) {
+      vector.copy(outwardTangent.normalize());
+      adjusted = true;
     } else {
       vector.set(0, 0, 0);
     }
+  }
+
+  if (adjusted && vector.lengthSq() > 0) {
+    vector.normalize();
   }
 }
 
