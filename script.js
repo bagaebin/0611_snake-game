@@ -143,20 +143,24 @@ function updateControlBasis() {
 }
 
 function createGrid() {
-  const tileGeometry = new THREE.PlaneGeometry(tileSize, tileSize);
+  const tileThickness = 0.3;
+  const raisedOffset = 0.08;
+  const tileGeometry = new THREE.BoxGeometry(tileSize, tileThickness, tileSize);
   const tileMaterials = [
-    new THREE.MeshStandardMaterial({ color: 0x37ff7a, metalness: 0.05, roughness: 0.82 }),
-    new THREE.MeshStandardMaterial({ color: 0xa6ffe4, metalness: 0.05, roughness: 0.82 }),
+    new THREE.MeshStandardMaterial({ color: 0x37ff7a, metalness: 0.08, roughness: 0.7 }),
+    new THREE.MeshStandardMaterial({ color: 0xaef4c6, metalness: 0.08, roughness: 0.68 }),
   ];
 
   const board = new THREE.Group();
   for (let x = 0; x < gridSize; x++) {
     for (let z = 0; z < gridSize; z++) {
-      const tile = new THREE.Mesh(tileGeometry, tileMaterials[(x + z) % 2]);
-      tile.rotation.x = -Math.PI / 2;
+      const materialIndex = (x + z) % 2;
+      const tile = new THREE.Mesh(tileGeometry, tileMaterials[materialIndex]);
+      tile.castShadow = false;
+      tile.receiveShadow = true;
       tile.position.set(
         -halfGrid + (x + 0.5) * tileSize,
-        0,
+        -tileThickness / 2 + (materialIndex === 1 ? raisedOffset : 0),
         -halfGrid + (z + 0.5) * tileSize
       );
       board.add(tile);
