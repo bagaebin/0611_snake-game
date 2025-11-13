@@ -365,9 +365,9 @@ function ensureSnakeShadow() {
   }
   const geometry = new THREE.CircleGeometry(tileSize * 0.7, 32);
   const material = new THREE.MeshBasicMaterial({
-    color: 0xaef8ff,
+    color: 0x6d7f99,
     transparent: true,
-    opacity: 0.48,
+    opacity: 0.6,
     depthWrite: false,
     side: THREE.DoubleSide,
   });
@@ -398,7 +398,7 @@ function updateSnakeShadow() {
   snake.shadow.scale.set(stretchX, stretchZ, 1);
 
   const activity = THREE.MathUtils.clamp(snake.direction.lengthSq(), 0, 1);
-  const targetOpacity = 0.45 + activity * 0.25;
+  const targetOpacity = 0.55 + activity * 0.2;
   snake.shadow.material.opacity = targetOpacity;
 }
 
