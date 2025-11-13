@@ -12,6 +12,9 @@ const initialStatusMessage = statusEl.textContent;
 
 const gridSize = 16;
 const tileSize = 1;
+const tileThickness = 0.3;
+const raisedTileOffset = 0.08;
+const snakeHoverOffset = tileThickness * 0.75;
 const halfGrid = (gridSize * tileSize) / 2;
 const frustumSize = gridSize * tileSize;
 
@@ -28,6 +31,8 @@ const snake = {
   segmentHeight: tileSize * 0.55,
   pathPositions: [],
   pathDistances: [],
+  shadow: null,
+  shadowHeight: raisedTileOffset + 0.01,
 };
 
 const coin = {
@@ -143,8 +148,6 @@ function updateControlBasis() {
 }
 
 function createGrid() {
-  const tileThickness = 0.3;
-  const raisedOffset = 0.08;
   const tileGeometry = new THREE.BoxGeometry(tileSize, tileThickness, tileSize);
   const tileMaterials = [
     new THREE.MeshStandardMaterial({ color: 0x37ff7a, metalness: 0.08, roughness: 0.7 }),
@@ -160,13 +163,17 @@ function createGrid() {
       tile.receiveShadow = true;
       tile.position.set(
         -halfGrid + (x + 0.5) * tileSize,
-        -tileThickness / 2 + (materialIndex === 1 ? raisedOffset : 0),
+        -tileThickness / 2 + (materialIndex === 1 ? raisedTileOffset : 0),
         -halfGrid + (z + 0.5) * tileSize
       );
       board.add(tile);
     }
   }
   scene.add(board);
+}
+
+function getSnakeBaseY() {
+  return snakeHoverOffset + snake.segmentHeight / 2;
 }
 
 function clampPositionToGrid(position) {
@@ -310,13 +317,16 @@ function startGame() {
 
   const head = createSegment(0xf23d9b, 0x5e1236, 0.65);
   head.position.copy(startPosition);
-  head.position.y = snake.segmentHeight / 2;
+  head.position.y = getSnakeBaseY();
   clampPositionToGrid(head.position);
   scene.add(head);
   snake.segments.push(head);
 
   snake.pathPositions = [head.position.clone()];
   snake.pathDistances = [0];
+
+  ensureSnakeShadow();
+  updateSnakeShadow();
 
   coin.nextSpawn = performance.now() + coin.interval;
 }
@@ -326,6 +336,9 @@ function clearSnake() {
   snake.segments = [];
   snake.pathPositions = [];
   snake.pathDistances = [];
+  if (snake.shadow) {
+    snake.shadow.visible = false;
+  }
 }
 
 function createSegment(color, emissive = 0x000000, emissiveIntensity = 0.4) {
@@ -343,6 +356,50 @@ function createSegment(color, emissive = 0x000000, emissiveIntensity = 0.4) {
   });
   const mesh = new THREE.Mesh(geometry, material);
   return mesh;
+}
+
+function ensureSnakeShadow() {
+  if (snake.shadow) {
+    snake.shadow.visible = true;
+    return;
+  }
+  const geometry = new THREE.CircleGeometry(tileSize * 0.7, 32);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xaef8ff,
+    transparent: true,
+    opacity: 0.48,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  const shadow = new THREE.Mesh(geometry, material);
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.renderOrder = 1;
+  snake.shadow = shadow;
+  scene.add(shadow);
+}
+
+function updateSnakeShadow() {
+  if (!snake.shadow) return;
+  const head = snake.segments[0];
+  if (!head) {
+    snake.shadow.visible = false;
+    return;
+  }
+  snake.shadow.visible = true;
+  snake.shadow.position.set(head.position.x, snake.shadowHeight, head.position.z);
+
+  const directionalStretch = new THREE.Vector3(
+    Math.abs(snake.direction.x),
+    0,
+    Math.abs(snake.direction.z)
+  );
+  const stretchX = 1 + directionalStretch.x * 0.35;
+  const stretchZ = 1 + directionalStretch.z * 0.35;
+  snake.shadow.scale.set(stretchX, stretchZ, 1);
+
+  const activity = THREE.MathUtils.clamp(snake.direction.lengthSq(), 0, 1);
+  const targetOpacity = 0.45 + activity * 0.25;
+  snake.shadow.material.opacity = targetOpacity;
 }
 
 function animate(now) {
@@ -367,6 +424,7 @@ function animate(now) {
     updateCoin(delta, now);
   }
 
+  updateSnakeShadow();
   renderer.render(scene, camera);
 }
 
@@ -673,6 +731,7 @@ function growSnake() {
   nextBodyColorIndex++;
   const tailPosition = snake.segments[snake.segments.length - 1].position.clone();
   segment.position.copy(tailPosition);
+  segment.position.y = getSnakeBaseY();
   clampPositionToGrid(segment.position);
   scene.add(segment);
   snake.segments.push(segment);
@@ -706,7 +765,7 @@ function getRandomEmptyCell() {
 function cellToPosition(cell) {
   return new THREE.Vector3(
     -halfGrid + (cell.x + 0.5) * tileSize,
-    snake.segmentHeight / 2,
+    getSnakeBaseY(),
     -halfGrid + (cell.z + 0.5) * tileSize
   );
 }
